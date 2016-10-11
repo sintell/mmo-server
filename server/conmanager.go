@@ -17,8 +17,8 @@ type PacketsList map[uint]Packet
 
 // PacketHandler represent a handler of any client-server datagramms
 type PacketHandler interface {
-	ReadHead(io.Reader) (uint, error)
-	ReadBody(uint, io.Reader, *packet.PacketsList) (packet.Packet, error)
+	ReadHead(io.Reader) (*packet.HeaderPacket, error)
+	ReadBody(*packet.HeaderPacket, io.Reader, *packet.PacketsList) (packet.Packet, error)
 	NewPacketsList() *packet.PacketsList
 }
 
@@ -56,9 +56,11 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 	cm.Connections[c] = true
 
 	go func() {
-		defer c.Close()
-		defer close(sink)
-		defer cm.recoverConnectionPanic(c)
+		defer func() {
+			c.Close()
+			close(sink)
+			cm.recoverConnectionPanic(c)
+		}()
 
 		for {
 			select {
@@ -70,12 +72,12 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 			default:
 				{
 					t := time.Now()
-					pid, err := cm.PacketHandler.ReadHead(c)
+					header, err := cm.PacketHandler.ReadHead(c)
 					if handleConnectionError(err) {
+						cm.Logger.Errorf("error reading packet header: %s\n", err.Error())
 						return
 					}
-					cm.Logger.Debugf("read pid of %d", pid)
-					data, err := cm.PacketHandler.ReadBody(pid, c, cm.PacketHandler.NewPacketsList())
+					data, err := cm.PacketHandler.ReadBody(header, c, cm.PacketHandler.NewPacketsList())
 					if handleConnectionError(err) {
 						cm.Logger.Errorf("error reading packet body: %s\n", err.Error())
 						return
@@ -92,8 +94,10 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 
 func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet) {
 	go func() {
-		defer c.Close()
-		defer cm.Logger.Infof("closing connection for: [%s]", c.RemoteAddr().String())
+		defer func() {
+			c.Close()
+			cm.Logger.Infof("closing connection for: [%s]", c.RemoteAddr().String())
+		}()
 
 		for p := range source {
 			select {
@@ -120,11 +124,19 @@ func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet)
 	}()
 }
 
+// RegisterFilters add filtering functions to connection
+func (cm *ConnectionManager) RegisterFilters() (<-chan packet.Packet, <-chan packet.Packet) {
+	sink := make(chan packet.Packet)
+	filter := make(chan packet.Packet)
+
+	return sink, filter
+}
+
 // CloseAll closes all connections before shutdown
 func (cm *ConnectionManager) CloseAll() {
+	cm.Logger.Infof("stop requested, closing all connections")
+	close(cm.stop)
 	for c := range cm.Connections {
-		cm.Logger.Infof("stop requested, closing all connections")
-		close(cm.stop)
 		c.Close()
 	}
 }

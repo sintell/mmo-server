@@ -8,12 +8,7 @@ import (
 )
 
 func readBytesAsBool(data []byte) bool {
-	val, bytesRead := binary.Varint(data)
-	if bytesRead == 0 {
-		panic(fmt.Errorf("no bytes were read"))
-	}
-
-	return val != 0
+	return readBytesAsUint8(data) > 0
 }
 
 func readBytesAsInt8(data []byte) int8 {
@@ -69,35 +64,37 @@ type GamePacketHandler struct {
 }
 
 // PacketsList holds all awailable packets
-type PacketsList map[uint]Packet
+type PacketsList map[uint16]Packet
 
 // NewPacketsList returns pointer to a new packets list
 func (ph *GamePacketHandler) NewPacketsList() *PacketsList {
 	return &PacketsList{
-		33:   new(fp),
-		5008: new(sp),
+		5189: new(fp),
+		5190: new(sp),
 	}
 }
 
 // ReadHead reads packet id from stream
-func (ph GamePacketHandler) ReadHead(c io.Reader) (uint, error) {
+func (ph GamePacketHandler) ReadHead(c io.Reader) (*HeaderPacket, error) {
 	if ph.HeadLength == 0 {
-		return 0, fmt.Errorf("can't read packet head as it size set to 0")
+		return nil, fmt.Errorf("can't read packet head as it size set to 0")
 	}
 
-	data := make([]byte, ph.HeadLength)
-	_, err := c.Read(data)
+	buf := make([]byte, 6)
+	hp := new(HeaderPacket)
+	_, err := c.Read(buf)
+
+	hp.UnmarshalBinary(buf)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	pid := uint(binary.LittleEndian.Uint16(data))
-	return pid, nil
+	return hp, nil
 }
 
 // ReadBody convert bytes to structs
-func (ph GamePacketHandler) ReadBody(id uint, c io.Reader, p *PacketsList) (Packet, error) {
-	size := id - ph.HeadLength
+func (ph GamePacketHandler) ReadBody(header *HeaderPacket, c io.Reader, p *PacketsList) (Packet, error) {
+	size := uint(header.length - 6)
 	buf := make([]byte, 0, size)
 	t := make([]byte, size/2)
 	bytesLeft := size
@@ -109,10 +106,10 @@ func (ph GamePacketHandler) ReadBody(id uint, c io.Reader, p *PacketsList) (Pack
 
 		buf = append(buf, t[:read]...)
 		bytesLeft = bytesLeft - uint(read)
-		ph.Logger.Debugf("pid: %d\tread: %d\tleft: %d\n", id, read, bytesLeft)
+		ph.Logger.Debugf("pid: %d\tread: %d\tleft: %d\n", header.ID, read, bytesLeft)
 	}
 
-	if packetItem, exists := (*p)[id]; exists {
+	if packetItem, exists := (*p)[header.ID]; exists {
 		err := packetItem.UnmarshalBinary(buf)
 		if err != nil {
 			return nil, err
@@ -121,5 +118,5 @@ func (ph GamePacketHandler) ReadBody(id uint, c io.Reader, p *PacketsList) (Pack
 		return packetItem, nil
 	}
 
-	return nil, fmt.Errorf("Unknown packet id: %d", id)
+	return nil, fmt.Errorf("Unknown packet id: %d", header.ID)
 }

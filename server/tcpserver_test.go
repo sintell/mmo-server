@@ -30,12 +30,12 @@ type ErrorPacketHandler struct {
 	ReadBodyValue []byte
 }
 
-func (eph ErrorPacketHandler) ReadHead(c io.Reader) (uint, error) {
+func (eph ErrorPacketHandler) ReadHead(c io.Reader) (*packet.HeaderPacket, error) {
 	_, err := c.Read([]byte{})
-	return 0, err
+	return new(packet.HeaderPacket), err
 }
 
-func (eph ErrorPacketHandler) ReadBody(id uint, c io.Reader, pl *packet.PacketsList) (packet.Packet, error) {
+func (eph ErrorPacketHandler) ReadBody(header *packet.HeaderPacket, c io.Reader, pl *packet.PacketsList) (packet.Packet, error) {
 	_, err := c.Read([]byte{})
 	return &testPacket{2, 1}, err
 }

@@ -1,10 +1,6 @@
 package packet
 
 type fp struct {
-	ID   uint16
-	A    bool    // 1
-	B    uint8   // 1
-	C    uint16  // 2
 	D    uint32  // 4
 	E    float32 // 4
 	F    float32 // 4
@@ -20,29 +16,19 @@ func (f *fp) MarshalBinary() []byte {
 }
 
 func (f *fp) UnmarshalBinary(data []byte) error {
-	f.ID = 33
-	f.A = readBytesAsBool(data[0:1])
-	f.B = readBytesAsUint8(data[1:2])
-	f.C = readBytesAsUint16(data[2:4])
-	f.D = readBytesAsUint32(data[4:8])
-	f.E = readBytesAsFloat32(data[8:12])
-	f.F = readBytesAsFloat32(data[12:16])
-	f.G = readBytesAsFloat32(data[16:20])
-	f.H = readBytesAsUint16(data[20:22])
-	f.Test = readBytesAsInt8(data[22:23])
-	f.I = readBytesAsFloat32(data[23:27])
-	f.J = readBytesAsInt32(data[27:31])
+	f.D = readBytesAsUint32(data[0:4])
+	f.E = readBytesAsFloat32(data[4:8])
+	f.F = readBytesAsFloat32(data[8:12])
+	f.G = readBytesAsFloat32(data[12:16])
+	f.H = readBytesAsUint16(data[16:18])
+	f.Test = readBytesAsInt8(data[18:19])
+	f.I = readBytesAsFloat32(data[19:23])
+	f.J = readBytesAsInt32(data[23:27])
 
 	return nil
 }
 
 type sp struct {
-	//bool (1, true)
-	A bool
-	//uint8 (250 максимум, потом обнуляет) (нечетное)
-	B uint8
-	//uint16 (5190)
-	C uint16
 	//uint16 (500) (является количеством следующих элементов, длинной по 10 байт)
 	D uint16
 	//[
@@ -66,10 +52,7 @@ func (s *sp) MarshalBinary() []byte {
 }
 
 func (s *sp) UnmarshalBinary(data []byte) error {
-	s.A = readBytesAsBool(data[0:1])
-	s.B = readBytesAsUint8(data[1:2])
-	s.C = readBytesAsUint16(data[2:4])
-	s.D = readBytesAsUint16(data[4:6])
+	s.D = readBytesAsUint16(data[0:2])
 	for i := 0; i < int(s.D); i++ {
 		offset := i * 10
 		s.E[i] = struct {
@@ -84,12 +67,53 @@ func (s *sp) UnmarshalBinary(data []byte) error {
 			////int16 (15)
 			J int16
 		}{
-			readBytesAsInt8(data[offset+6 : offset+7]),
-			readBytesAsFloat32(data[offset+7 : offset+11]),
-			readBytesAsInt8(data[offset+11 : offset+12]),
-			readBytesAsInt16(data[offset+12 : offset+14]),
-			readBytesAsInt16(data[offset+14 : offset+16]),
+			readBytesAsInt8(data[offset+2 : offset+3]),
+			readBytesAsFloat32(data[offset+3 : offset+7]),
+			readBytesAsInt8(data[offset+7 : offset+8]),
+			readBytesAsInt16(data[offset+8 : offset+10]),
+			readBytesAsInt16(data[offset+10 : offset+12]),
 		}
 	}
 	return nil
+}
+
+// HeaderPacket represents header for packets
+type HeaderPacket struct {
+	length  uint16
+	isCrypt bool
+	number  uint8
+	ID      uint16
+}
+
+// MarshalBinary TODO: write doc
+func (hp *HeaderPacket) MarshalBinary() []byte {
+	return []byte{}
+}
+
+// UnmarshalBinary TODO: write doc
+func (hp *HeaderPacket) UnmarshalBinary(data []byte) error {
+	hp.length = readBytesAsUint16(data[0:2])
+	hp.isCrypt = readBytesAsBool(data[2:3])
+	hp.number = readBytesAsUint8(data[3:4])
+	hp.ID = readBytesAsUint16(data[4:6])
+
+	return nil
+}
+
+type clientLoginRequestPacket struct {
+	isCrypt   bool
+	number    uint8
+	ID        uint16
+	accountID uint32
+	username  [20]byte
+	password  [20]byte
+	token     [32]byte
+}
+
+type clientLoginAccept struct {
+	length  uint16
+	isCrypt bool
+	number  uint8
+	ID      uint16
+	token   [32]byte
 }

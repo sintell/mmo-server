@@ -165,34 +165,34 @@ func TestReadBytesAsFloat64(t *testing.T) {
 func TestReadHead(t *testing.T) {
 	t.Parallel()
 
-	testPacket := []byte{0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
+	testPacket := []byte{0x10, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
 	emptyPacket := []byte{}
 
 	ph := GamePacketHandler{}
-	pid, err := ph.ReadHead(bytes.NewBuffer(testPacket))
+	header, err := ph.ReadHead(bytes.NewBuffer(testPacket))
 	if err == nil {
 		t.Error("calling ReadHead with zero HeadLength yeilds no error")
 	}
 
-	if pid != 0 {
-		t.Error("calling ReadHead with zero HeadLength results in pid bigger then 0")
+	if header != nil {
+		t.Error("calling ReadHead with zero HeadLength results in header not being nil")
 	}
 
 	ph = GamePacketHandler{HeadLength: 2}
-	pid, err = ph.ReadHead(bytes.NewBuffer(emptyPacket))
+	header, err = ph.ReadHead(bytes.NewBuffer(emptyPacket))
 	if err == nil {
 		t.Error("reading empty packet yeilds no error")
 	}
 
-	if pid != 0 {
-		t.Error("reading empty packet results in pid bigger then 0")
+	if header != nil {
+		t.Error("reading empty packet results in in header not being nil")
 	}
 
-	pid, err = ph.ReadHead(bytes.NewBuffer(testPacket))
+	header, err = ph.ReadHead(bytes.NewBuffer(testPacket))
 	if err != nil {
 		t.Errorf("error reading head: %s", err.Error())
 	}
-	if pid != 0x10 {
-		t.Errorf("wrong pid: expected %d, got %d", 16, pid)
+	if header.ID != 0x10 {
+		t.Errorf("wrong header.ID: expected %d, got %d", 16, header.ID)
 	}
 }
