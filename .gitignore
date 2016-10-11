@@ -1,0 +1,5 @@
+# profiler output
+prof/
+
+# server binary
+mmoserver
