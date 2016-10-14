@@ -11,5 +11,10 @@ logs/
 debug
 ./**/debug
 
-# keys
+# secret files
 key/
+packets/
+
+
+## MacOS trash
+.DS_Store
