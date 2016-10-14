@@ -2,8 +2,10 @@ package server
 
 import (
 	"net"
+	"strings"
+	"time"
 
-	"github.com/sintell/mmo-server/game"
+	"github.com/sintell/mmo-server/packet"
 )
 
 // Logger is interface for logging service
@@ -13,12 +15,35 @@ type Logger interface {
 	Errorf(string, ...interface{})
 }
 
+// GameManager is game manager
+type GameManager interface {
+	RegisterDataSource(<-chan packet.Packet) <-chan packet.Packet
+}
+
+// AuthManager is auth manager
+type AuthManager interface {
+	RegisterDataSource(<-chan packet.Packet) <-chan packet.Packet
+}
+
 // TCPServer is wrap around for basic tcp server listener
 type TCPServer struct {
 	NetAddr           *net.TCPAddr
 	Logger            Logger
 	ConnectionManager ConnectionManager
-	GameManager       *game.Manager
+	GameManager       GameManager
+	AuthManager       AuthManager
+	startTime         time.Time
+}
+
+func shouldReject(c TCPConnection) bool {
+	if strings.Contains(c.RemoteAddr().String(), "0.0.0.0") ||
+		strings.Contains(c.RemoteAddr().String(), "91.246.87.82") ||
+		strings.Contains(c.RemoteAddr().String(), "138.201.123.151") ||
+		strings.Contains(c.RemoteAddr().String(), "192.168.1.34") {
+
+		return false
+	}
+	return true
 }
 
 // Listen start server and wait for incoming connections
@@ -29,6 +54,8 @@ func (s *TCPServer) Listen() {
 		s.Logger.Errorf("error creating server: %s\n", err.Error())
 	}
 
+	s.startTime = time.Now()
+
 	s.Logger.Infof("server listening on: %s\n", s.NetAddr.String())
 
 	for {
@@ -36,10 +63,23 @@ func (s *TCPServer) Listen() {
 		if err != nil {
 			s.Logger.Errorf("error accepting connection: %s\n", err.Error())
 		}
+		s.Logger.Debugf("got connection from: %s", conn.RemoteAddr().String())
+		if shouldReject(conn) {
+			s.Logger.Debugf("kicked: %s", conn.RemoteAddr().String())
+			conn.Close()
+			continue
+		}
 		conn.SetKeepAlive(true)
+		_, err = conn.Write(packet.StrangePacket)
+		if err != nil {
+			s.Logger.Errorf("error writing SP: %s", err.Error())
+			return
+		}
 		source := s.ConnectionManager.ReadFrom(conn)
-		source = s.GameManager.RegisterDataSource(source)
-		s.ConnectionManager.Write(conn, source)
+		authSource := s.AuthManager.RegisterDataSource(source)
+		gameSource := s.GameManager.RegisterDataSource(source)
+		s.ConnectionManager.Write(conn, authSource)
+		s.ConnectionManager.Write(conn, gameSource)
 	}
 }
 

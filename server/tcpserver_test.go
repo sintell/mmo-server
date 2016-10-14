@@ -37,22 +37,30 @@ func (eph ErrorPacketHandler) ReadHead(c io.Reader) (*packet.HeaderPacket, error
 
 func (eph ErrorPacketHandler) ReadBody(header *packet.HeaderPacket, c io.Reader, pl *packet.PacketsList) (packet.Packet, error) {
 	_, err := c.Read([]byte{})
-	return &testPacket{2, 1}, err
+	return &TestPacket{id: 2, field: 1}, err
 }
 
 func (eph ErrorPacketHandler) NewPacketsList() *packet.PacketsList {
 	return new(packet.PacketsList)
 }
 
-type testPacket struct {
+type TestPacket struct {
+	packet.Packet
 	id    uint
 	field uint8
 }
 
-func (tp *testPacket) MarshalBinary() []byte {
+func (tp *TestPacket) MarshalBinary() []byte {
 	return []byte{byte(tp.id), byte(tp.field)}
 }
-func (tp *testPacket) UnmarshalBinary(data []byte) error {
+func (tp *TestPacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+func (tp *TestPacket) setHeader(h *packet.HeaderPacket) {
+	noop()
+}
+func (tp *TestPacket) Header() *packet.HeaderPacket {
 	return nil
 }
 

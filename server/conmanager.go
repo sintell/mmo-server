@@ -7,13 +7,8 @@ import (
 	"github.com/sintell/mmo-server/packet"
 )
 
-// Packet represent datagramms and provides a convinient set of operations
-type Packet interface {
-	UnmarshalBinary([]byte) error
-}
-
 // PacketsList holds all awailable packets
-type PacketsList map[uint]Packet
+type PacketsList map[uint]packet.Packet
 
 // PacketHandler represent a handler of any client-server datagramms
 type PacketHandler interface {
@@ -44,6 +39,7 @@ func (cm *ConnectionManager) recoverConnectionPanic(c TCPConnection) {
 	if err := recover(); err != nil {
 		cm.Logger.Errorf("catched panic: %s", err.(error).Error())
 		c.Close()
+		return
 	}
 
 	delete(cm.Connections, c)
@@ -57,9 +53,8 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 
 	go func() {
 		defer func() {
-			c.Close()
-			close(sink)
 			cm.recoverConnectionPanic(c)
+			close(sink)
 		}()
 
 		for {
@@ -71,8 +66,8 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 				}
 			default:
 				{
-					t := time.Now()
 					header, err := cm.PacketHandler.ReadHead(c)
+					t := time.Now()
 					if handleConnectionError(err) {
 						cm.Logger.Errorf("error reading packet header: %s\n", err.Error())
 						return
@@ -125,11 +120,21 @@ func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet)
 }
 
 // RegisterFilters add filtering functions to connection
-func (cm *ConnectionManager) RegisterFilters() (<-chan packet.Packet, <-chan packet.Packet) {
+func (cm *ConnectionManager) RegisterFilters(source <-chan packet.Packet,
+	filters ...func(packet.Packet) packet.Packet) <-chan packet.Packet {
 	sink := make(chan packet.Packet)
-	filter := make(chan packet.Packet)
 
-	return sink, filter
+	go func() {
+		for p := range source {
+			for _, filter := range filters {
+				if pass := filter(p); pass != nil {
+					sink <- pass
+				}
+			}
+		}
+	}()
+
+	return sink
 }
 
 // CloseAll closes all connections before shutdown

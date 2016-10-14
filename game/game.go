@@ -2,7 +2,10 @@ package game
 
 import "github.com/sintell/mmo-server/packet"
 
-// Manager handles incoming packets and works with game resources
+// PacketsList holds all awailable packets
+type PacketsList map[uint]packet.Packet
+
+// Manager handles incoming game packets and controlls game mechanics and game resources
 type Manager struct {
 	binds map[uint]data
 	count uint
