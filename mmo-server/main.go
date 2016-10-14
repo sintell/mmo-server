@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
+	"github.com/sintell/mmo-server/auth"
 	"github.com/sintell/mmo-server/game"
 	"github.com/sintell/mmo-server/logger"
 	"github.com/sintell/mmo-server/packet"
@@ -18,6 +19,7 @@ import (
 )
 
 var prof = flag.String("prof", "", "write cpu profile to file")
+var stopdelay = flag.Int("stopdelay", -1, "wait n secs before server stop")
 
 func init() {
 	flag.Parse()
@@ -52,7 +54,7 @@ func main() {
 		Logger:  logger.Log{},
 		ConnectionManager: server.ConnectionManager{
 			PacketHandler: &packet.GamePacketHandler{
-				HeadLength: 2,
+				HeadLength: 6,
 				Logger:     logger.Log{},
 				PacketList: packet.PacketsList{},
 			},
@@ -60,6 +62,7 @@ func main() {
 			Connections: make(map[server.TCPConnection]bool),
 		},
 		GameManager: game.NewManager(),
+		AuthManager: auth.NewManager(),
 	}
 
 	c := make(chan os.Signal, 1)
@@ -71,8 +74,11 @@ func main() {
 			if *prof != "" {
 				profStop.Stop()
 			}
-			(logger.Log{}).Infof("waiting 5s for all gorutines to finish...\n")
-			<-time.After(time.Second * 5)
+
+			if *stopdelay > 0 {
+				(logger.Log{}).Infof("waiting %ss for all gorutines to finish...\n", *stopdelay)
+				<-time.After(time.Second * time.Duration(*stopdelay))
+			}
 
 			glog.Flush()
 			os.Exit(0)
