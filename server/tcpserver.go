@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/sintell/mmo-server/packet"
 )
 
@@ -28,7 +29,6 @@ type AuthManager interface {
 // TCPServer is wrap around for basic tcp server listener
 type TCPServer struct {
 	NetAddr           *net.TCPAddr
-	Logger            Logger
 	ConnectionManager ConnectionManager
 	GameManager       GameManager
 	AuthManager       AuthManager
@@ -51,28 +51,28 @@ func (s *TCPServer) Listen() {
 	s.ConnectionManager.stop = make(chan interface{})
 	srv, err := net.ListenTCP("tcp4", s.NetAddr)
 	if err != nil {
-		s.Logger.Errorf("error creating server: %s\n", err.Error())
+		glog.Errorf("error creating server: %s\n", err.Error())
 	}
 
 	s.startTime = time.Now()
 
-	s.Logger.Infof("server listening on: %s\n", s.NetAddr.String())
+	glog.Infof("server listening on: %s\n", s.NetAddr.String())
 
 	for {
 		conn, err := srv.AcceptTCP()
 		if err != nil {
-			s.Logger.Errorf("error accepting connection: %s\n", err.Error())
+			glog.Errorf("error accepting connection: %s\n", err.Error())
 		}
-		s.Logger.Debugf("got connection from: %s", conn.RemoteAddr().String())
+		glog.V(10).Infof("got connection from: %s", conn.RemoteAddr().String())
 		if shouldReject(conn) {
-			s.Logger.Debugf("kicked: %s", conn.RemoteAddr().String())
+			glog.V(10).Infof("kicked: %s", conn.RemoteAddr().String())
 			conn.Close()
 			continue
 		}
 		conn.SetKeepAlive(true)
 		_, err = conn.Write(packet.StrangePacket)
 		if err != nil {
-			s.Logger.Errorf("error writing SP: %s", err.Error())
+			glog.Errorf("error writing SP: %s", err.Error())
 			return
 		}
 		source := s.ConnectionManager.ReadFrom(conn)

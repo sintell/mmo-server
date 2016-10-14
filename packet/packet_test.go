@@ -51,7 +51,7 @@ func TestReadHead(t *testing.T) {
 	testPacket := []byte{0x10, 0x0, 0x0, 0x0, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
 	emptyPacket := []byte{}
 
-	ph := GamePacketHandler{Logger: &DummyLogger{}}
+	ph := GamePacketHandler{}
 	header, err := ph.ReadHead(bytes.NewBuffer(testPacket))
 	if err == nil {
 		t.Error("calling ReadHead with zero HeadLength yeilds no error")
@@ -61,7 +61,7 @@ func TestReadHead(t *testing.T) {
 		t.Error("calling ReadHead with zero HeadLength results in header not being nil")
 	}
 
-	ph = GamePacketHandler{HeadLength: 6, Logger: &DummyLogger{}}
+	ph = GamePacketHandler{HeadLength: 6}
 	header, err = ph.ReadHead(bytes.NewBuffer(emptyPacket))
 	if err == nil {
 		t.Error("reading empty packet yeilds no error")

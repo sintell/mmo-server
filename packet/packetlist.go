@@ -17,8 +17,8 @@ type HeaderPacket struct {
 func (hp *HeaderPacket) MarshalBinary() []byte {
 	buf := make([]byte, 6)
 	putUint16AsBytes(buf[0:2], hp.Length)
-	putBoolAsBytes(buf[2:2], hp.IsCrypt)
-	putUint8AsBytes(buf[3:3], hp.Number)
+	putBoolAsBytes(buf[2:3], hp.IsCrypt)
+	putUint8AsBytes(buf[3:4], hp.Number)
 	putUint16AsBytes(buf[4:6], hp.ID)
 	if hp.IsCrypt {
 		return encryptHead(buf)
@@ -117,7 +117,7 @@ func (cla *ClientLoginAcceptPacket) MarshalBinary() []byte {
 	buf := make([]byte, cla.Length)
 	copy(buf[:6], cla.HeaderPacket.MarshalBinary())
 	copy(buf[6:38], []byte(cla.Token))
-	putBoolAsBytes(buf[38:38], cla.Accepted)
+	putBoolAsBytes(buf[38:39], cla.Accepted)
 	return buf
 }
 

@@ -13,7 +13,6 @@ import (
 	"github.com/pkg/profile"
 	"github.com/sintell/mmo-server/auth"
 	"github.com/sintell/mmo-server/game"
-	"github.com/sintell/mmo-server/logger"
 	"github.com/sintell/mmo-server/packet"
 	"github.com/sintell/mmo-server/server"
 )
@@ -51,14 +50,11 @@ func main() {
 
 	server := server.TCPServer{
 		NetAddr: &net.TCPAddr{IP: net.ParseIP(*ip), Port: *port},
-		Logger:  logger.Log{},
 		ConnectionManager: server.ConnectionManager{
 			PacketHandler: &packet.GamePacketHandler{
 				HeadLength: 6,
-				Logger:     logger.Log{},
 				PacketList: packet.PacketsList{},
 			},
-			Logger:      logger.Log{},
 			Connections: make(map[server.TCPConnection]bool),
 		},
 		GameManager: game.NewManager(),
@@ -69,14 +65,14 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	go func() {
 		for sig := range c {
-			(logger.Log{}).Infof("got %s, finishing...\n", sig.String())
+			glog.Infof("got %s, finishing...\n", sig.String())
 			server.Stop()
 			if *prof != "" {
 				profStop.Stop()
 			}
 
 			if *stopdelay > 0 {
-				(logger.Log{}).Infof("waiting %ss for all gorutines to finish...\n", *stopdelay)
+				glog.Infof("waiting %ss for all gorutines to finish...\n", *stopdelay)
 				<-time.After(time.Second * time.Duration(*stopdelay))
 			}
 

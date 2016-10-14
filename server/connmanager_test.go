@@ -43,7 +43,6 @@ func TestHandleConnectionError(t *testing.T) {
 func TestRecoverConnectionPanic(t *testing.T) {
 	cm := ConnectionManager{
 		PacketHandler: ErrorPacketHandler{},
-		Logger:        DummyLogger{},
 		Connections:   make(map[TCPConnection]bool),
 		stop:          make(chan interface{}),
 	}
@@ -65,7 +64,6 @@ func TestReadFrom(t *testing.T) {
 	testData := []byte{0x2, 0x1}
 	cm := ConnectionManager{
 		PacketHandler: ErrorPacketHandler{ReadBodyValue: testData},
-		Logger:        DummyLogger{},
 		Connections:   make(map[TCPConnection]bool),
 		stop:          make(chan interface{}),
 	}

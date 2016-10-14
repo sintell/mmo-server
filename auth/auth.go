@@ -1,6 +1,9 @@
 package auth
 
-import "github.com/sintell/mmo-server/packet"
+import (
+	"github.com/golang/glog"
+	"github.com/sintell/mmo-server/packet"
+)
 
 // Manager handles incoming auth packets and controlls game server authorization flow
 type Manager struct {
@@ -28,9 +31,11 @@ func (m *Manager) RegisterDataSource(source <-chan packet.Packet) <-chan packet.
 
 func (m *Manager) handle(d data) {
 	for p := range d.source {
+		glog.V(10).Infof("hadnling packet with ID: %d", p.Header().ID)
 		switch p.Header().ID {
 		case 1111:
 			t := p.(*packet.ClientLoginRequestPacket)
+			glog.V(10).Infof("packet contents: %+v", t)
 			resp := &packet.ClientLoginAcceptPacket{
 				HeaderPacket: packet.HeaderPacket{Length: 39, IsCrypt: false, Number: 0, ID: 1112},
 				Token:        t.Token,
@@ -38,7 +43,9 @@ func (m *Manager) handle(d data) {
 			}
 			d.sink <- resp
 		case 5100:
-			_ = p.(*packet.ClientLoginInfoPacket)
+			t := p.(*packet.ClientLoginInfoPacket)
+			glog.V(10).Infof("packet contents: %+v", t)
+
 			resp := &packet.ServerTimePacket{
 				HeaderPacket: packet.HeaderPacket{Length: 26, IsCrypt: false, Number: 0, ID: 5651},
 			}

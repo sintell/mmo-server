@@ -4,6 +4,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/sintell/mmo-server/packet"
 )
 
@@ -20,7 +21,6 @@ type PacketHandler interface {
 // ConnectionManager operates with connections
 type ConnectionManager struct {
 	PacketHandler PacketHandler
-	Logger        Logger
 	Connections   map[TCPConnection]bool
 	stop          chan interface{}
 }
@@ -37,7 +37,7 @@ var handleConnectionError = func(err error) bool {
 
 func (cm *ConnectionManager) recoverConnectionPanic(c TCPConnection) {
 	if err := recover(); err != nil {
-		cm.Logger.Errorf("catched panic: %s", err.(error).Error())
+		glog.Errorf("catched panic: %s", err.(error).Error())
 		c.Close()
 		return
 	}
@@ -61,7 +61,7 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 			select {
 			case _, more := <-cm.stop:
 				if !more {
-					cm.Logger.Infof("abort read: [%s]", c.RemoteAddr().String())
+					glog.Infof("abort read: [%s]", c.RemoteAddr().String())
 					return
 				}
 			default:
@@ -69,15 +69,15 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 					header, err := cm.PacketHandler.ReadHead(c)
 					t := time.Now()
 					if handleConnectionError(err) {
-						cm.Logger.Errorf("error reading packet header: %s\n", err.Error())
+						glog.Errorf("error reading packet header: %s\n", err.Error())
 						return
 					}
 					data, err := cm.PacketHandler.ReadBody(header, c, cm.PacketHandler.NewPacketsList())
 					if handleConnectionError(err) {
-						cm.Logger.Errorf("error reading packet body: %s\n", err.Error())
+						glog.Errorf("error reading packet body: %s\n", err.Error())
 						return
 					}
-					cm.Logger.Debugf("packet read complete in %s\n", time.Since(t).String())
+					glog.V(10).Infof("packet read complete in %s\n", time.Since(t).String())
 					sink <- data
 				}
 			}
@@ -91,14 +91,14 @@ func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet)
 	go func() {
 		defer func() {
 			c.Close()
-			cm.Logger.Infof("closing connection for: [%s]", c.RemoteAddr().String())
+			glog.Infof("closing connection for: [%s]", c.RemoteAddr().String())
 		}()
 
 		for p := range source {
 			select {
 			case _, more := <-cm.stop:
 				if !more {
-					cm.Logger.Infof("abort write: [%s]", c.RemoteAddr().String())
+					glog.Infof("abort write: [%s]", c.RemoteAddr().String())
 					return
 				}
 
@@ -111,9 +111,9 @@ func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet)
 			t := time.Now()
 			_, err := c.Write(p.MarshalBinary())
 			if handleConnectionError(err) {
-				cm.Logger.Errorf("error writing data: %s", err.Error())
+				glog.Errorf("error writing data: %s", err.Error())
 			}
-			cm.Logger.Debugf("packet write complete in %s\n", time.Since(t).String())
+			glog.V(10).Infof("packet write complete in %s\n", time.Since(t).String())
 
 		}
 	}()
@@ -139,7 +139,7 @@ func (cm *ConnectionManager) RegisterFilters(source <-chan packet.Packet,
 
 // CloseAll closes all connections before shutdown
 func (cm *ConnectionManager) CloseAll() {
-	cm.Logger.Infof("stop requested, closing all connections")
+	glog.Infof("stop requested, closing all connections")
 	close(cm.stop)
 	for c := range cm.Connections {
 		c.Close()

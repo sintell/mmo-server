@@ -6,6 +6,8 @@ import (
 	"io"
 	"math"
 	"os"
+
+	"github.com/golang/glog"
 )
 
 // AfterLoginPackets TODO
@@ -61,13 +63,6 @@ func init() {
 	}
 }
 
-// Logger is interface for logging service
-type Logger interface {
-	Debugf(string, ...interface{})
-	Infof(string, ...interface{})
-	Errorf(string, ...interface{})
-}
-
 // Packet represent datagramms and provides a convinient set of operations
 type Packet interface {
 	setHeader(*HeaderPacket)
@@ -79,7 +74,6 @@ type Packet interface {
 // GamePacketHandler represent a set of funcitons to handle game client packets
 type GamePacketHandler struct {
 	HeadLength uint
-	Logger     Logger
 	PacketList PacketsList
 }
 
@@ -105,7 +99,7 @@ func (ph GamePacketHandler) ReadHead(c io.Reader) (*HeaderPacket, error) {
 	if err != nil {
 		return nil, err
 	}
-	ph.Logger.Debugf("head bytes: %+v", buf)
+	glog.V(10).Infof("head bytes: %+v", buf)
 
 	hp := new(HeaderPacket)
 	hp.UnmarshalBinary(buf)
@@ -127,10 +121,10 @@ func (ph GamePacketHandler) ReadBody(header *HeaderPacket, c io.Reader, p *Packe
 
 		buf = append(buf, t[:read]...)
 		bytesLeft = bytesLeft - uint(read)
-		ph.Logger.Debugf("pid: %d\tread: %d\tleft: %d\n", header.ID, read, bytesLeft)
+		glog.V(10).Infof("pid: %d\tread: %d\tleft: %d\n", header.ID, read, bytesLeft)
 	}
 
-	ph.Logger.Debugf("body bytes: %+v", buf)
+	glog.V(10).Infof("body bytes: %+v", buf)
 
 	if packetItem, exists := (*p)[header.ID]; exists {
 		if header.IsCrypt {
