@@ -6,3 +6,10 @@ mmoserver
 
 # logs
 logs/
+
+# debug
+debug
+./**/debug
+
+# keys
+key/
