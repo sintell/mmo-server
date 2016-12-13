@@ -114,7 +114,6 @@ func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet)
 				glog.Errorf("error writing data: %s", err.Error())
 			}
 			glog.V(10).Infof("packet write complete in %s\n", time.Since(t).String())
-
 		}
 	}()
 }

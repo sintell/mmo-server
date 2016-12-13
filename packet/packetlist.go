@@ -121,7 +121,7 @@ func (cla *ClientLoginAcceptPacket) MarshalBinary() []byte {
 	return buf
 }
 
-// MarshalBinary TODO: write doc
+// UnmarshalBinary TODO: write doc
 func (cla *ClientLoginAcceptPacket) UnmarshalBinary([]byte) error {
 	return nil
 }
@@ -186,11 +186,12 @@ func (st *ServerTimePacket) setHeader(h *HeaderPacket) {
 	st.HeaderPacket = *h
 }
 
+// MockPacket TODO
 type MockPacket struct {
 	Data []byte
 }
 
-// UnmarshalBinary TODO: write doc
+// MarshalBinary TODO: write doc
 func (m *MockPacket) MarshalBinary() []byte {
 	return m.Data
 }
@@ -200,11 +201,41 @@ func (m *MockPacket) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
-// UnmarshalBinary TODO: write doc
+// Header TODO: write doc
 func (m *MockPacket) Header() *HeaderPacket {
 	return nil
 }
 
 // UnmarshalBinary TODO: write doc
 func (m *MockPacket) setHeader(h *HeaderPacket) {
+}
+
+/////////////////////// RDS PACKETS ////////////////////////
+
+// CharacterListQueryPacket TODO
+type CharacterListQueryPacket struct {
+	HeaderPacket
+	UID uint32
+}
+
+// MarshalBinary TODO: write doc
+func (clq *CharacterListQueryPacket) MarshalBinary() []byte {
+	buf := make([]byte, clq.HeaderPacket.Length)
+	copy(buf[:6], clq.HeaderPacket.MarshalBinary())
+	putUint32AsBytes(buf[6:10], clq.UID)
+	return buf
+}
+
+// UnmarshalBinary TODO: write doc
+func (clq *CharacterListQueryPacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+// Header TODO: write doc
+func (clq *CharacterListQueryPacket) Header() *HeaderPacket {
+	return nil
+}
+
+// UnmarshalBinary TODO: write doc
+func (clq *CharacterListQueryPacket) setHeader(h *HeaderPacket) {
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/sintell/mmo-server/db"
 	"github.com/sintell/mmo-server/packet"
 )
 
@@ -32,12 +33,14 @@ type TCPServer struct {
 	ConnectionManager ConnectionManager
 	GameManager       GameManager
 	AuthManager       AuthManager
+	DB                db.Provider
 	startTime         time.Time
 }
 
 func shouldReject(c TCPConnection) bool {
 	if strings.Contains(c.RemoteAddr().String(), "0.0.0.0") ||
 		strings.Contains(c.RemoteAddr().String(), "91.246.87.82") ||
+		strings.Contains(c.RemoteAddr().String(), "91.246.101.158") ||
 		strings.Contains(c.RemoteAddr().String(), "138.201.123.151") ||
 		strings.Contains(c.RemoteAddr().String(), "192.168.1.34") {
 
@@ -76,10 +79,9 @@ func (s *TCPServer) Listen() {
 			return
 		}
 		source := s.ConnectionManager.ReadFrom(conn)
-		authSource := s.AuthManager.RegisterDataSource(source)
-		gameSource := s.GameManager.RegisterDataSource(source)
-		s.ConnectionManager.Write(conn, authSource)
-		s.ConnectionManager.Write(conn, gameSource)
+		source = s.AuthManager.RegisterDataSource(source)
+		source = s.GameManager.RegisterDataSource(source)
+		s.ConnectionManager.Write(conn, source)
 	}
 }
 
