@@ -186,30 +186,6 @@ func (st *ServerTimePacket) setHeader(h *HeaderPacket) {
 	st.HeaderPacket = *h
 }
 
-// MockPacket TODO
-type MockPacket struct {
-	Data []byte
-}
-
-// MarshalBinary TODO: write doc
-func (m *MockPacket) MarshalBinary() []byte {
-	return m.Data
-}
-
-// UnmarshalBinary TODO: write doc
-func (m *MockPacket) UnmarshalBinary(data []byte) error {
-	return nil
-}
-
-// Header TODO: write doc
-func (m *MockPacket) Header() *HeaderPacket {
-	return nil
-}
-
-// UnmarshalBinary TODO: write doc
-func (m *MockPacket) setHeader(h *HeaderPacket) {
-}
-
 /////////////////////// RDS PACKETS ////////////////////////
 
 // CharacterListQueryPacket TODO

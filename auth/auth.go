@@ -118,7 +118,7 @@ func (m *Manager) handle(d data) {
 				HeaderPacket: packet.HeaderPacket{Length: 26, IsCrypt: false, Number: 0, ID: 5651},
 			}
 			d.sink <- resp
-			d.sink <- &packet.MockPacket{Data: packet.AfterLoginPackets}
+			d.sink <- packet.AfterLoginPackets
 			d.sink <- &packet.MockPacket{Data: charListData}
 		default:
 			d.sink <- p
