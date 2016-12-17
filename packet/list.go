@@ -458,3 +458,106 @@ func (sm *ServerMovePacket) Header() *HeaderPacket {
 func (sm *ServerMovePacket) setHeader(h *HeaderPacket) {
 	sm.HeaderPacket = *h
 }
+
+type RemoveItemPacket struct {
+	HeaderPacket
+	UniqueID uint32
+	Amount   int32
+}
+
+func (ri *RemoveItemPacket) MarshalBinary() []byte {
+	return nil
+}
+
+// UnmarshalBinary TODO: write doc
+func (ri *RemoveItemPacket) UnmarshalBinary(data []byte) error {
+	ri.UniqueID = readBytesAsUint32(data[0:4])
+	ri.Amount = readBytesAsInt32(data[4:8])
+	return nil
+}
+
+// Header TODO: write doc
+func (ri *RemoveItemPacket) Header() *HeaderPacket {
+	return &ri.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (ri *RemoveItemPacket) setHeader(h *HeaderPacket) {
+	ri.HeaderPacket = *h
+}
+
+type ErrorPacket struct {
+	HeaderPacket
+	FromPacket uint16
+	ErrorNum   uint32
+}
+
+func (err *ErrorPacket) MarshalBinary() []byte {
+	buf := make([]byte, 21)
+	copy(buf[0:6], err.HeaderPacket.MarshalBinary())
+	putUint16AsBytes(buf[6:], err.FromPacket)
+	putUint32AsBytes(buf[8:], err.ErrorNum)
+	return buf
+}
+
+// UnmarshalBinary TODO: write doc
+func (err *ErrorPacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+// Header TODO: write doc
+func (err *ErrorPacket) Header() *HeaderPacket {
+	return &err.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (err *ErrorPacket) setHeader(h *HeaderPacket) {
+	err.HeaderPacket = *h
+}
+
+type ServerRemoveItemPacket struct {
+	HeaderPacket
+	UniqueID       uint32
+	Amount         int32
+	ActorUniqueID  uint32
+	RemoveItemType int32
+	TraderID       uint32
+}
+
+func (sri *ServerRemoveItemPacket) MarshalBinary() []byte {
+	buf := make([]byte, 24)
+	copy(buf[0:6], sri.HeaderPacket.MarshalBinary())
+	putUint32AsBytes(buf[6:], sri.UniqueID)
+	putInt32AsBytes(buf[14:], sri.Amount)
+	switch sri.RemoveItemType {
+	case 0:
+		buf[22] = 0x00
+		putUint32AsBytes(buf[18:], sri.ActorUniqueID)
+	case 1:
+		buf[22] = 0x6c
+		putUint32AsBytes(buf[18:], sri.ActorUniqueID)
+	case 2:
+		buf[22] = 0x64
+		putUint32AsBytes(buf[18:], sri.ActorUniqueID)
+	case 6:
+		buf[22] = 0x06
+		putUint32AsBytes(buf[18:], sri.TraderID)
+	}
+
+	return buf
+}
+
+// UnmarshalBinary TODO: write doc
+func (sri *ServerRemoveItemPacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+// Header TODO: write doc
+func (sri *ServerRemoveItemPacket) Header() *HeaderPacket {
+	return &sri.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (sri *ServerRemoveItemPacket) setHeader(h *HeaderPacket) {
+	sri.HeaderPacket = *h
+}

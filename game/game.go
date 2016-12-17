@@ -28,11 +28,12 @@ type Manager struct {
 	count          uint
 	awaitingActors *actorList
 	ingameActors   *ingameActorList
-	rds            inventoryDataSource
+	rds            dataSource
 }
 
-type inventoryDataSource interface {
+type dataSource interface {
 	GetInventory(uint32) ([]byte, error)
+	RemoveItem(uint32, uint32, int32) (*packet.RemoveResultPacket, error)
 }
 
 type data struct {
@@ -41,7 +42,7 @@ type data struct {
 }
 
 // NewManager initialized new game manager
-func NewManager(remoteSource inventoryDataSource) *Manager {
+func NewManager(remoteSource dataSource) *Manager {
 	return &Manager{
 		make(map[uint]data),
 		0,
@@ -135,7 +136,19 @@ func (m *Manager) handle(ctx context.Context, d data) {
 				UniqueID:         gameActor.UniqueID,
 				SpeedMove:        350, //TODO SpeedMove (gameActor.Stats.SpeedMove)
 			}
+		case 5528:
+			ri := p.(*packet.RemoveItemPacket)
+			if gameActor == nil {
+				glog.Warningf("no gameActor for %d", uid)
+				continue
+			}
+			removeItemResult, ignore := RemoveItem(m.rds, gameActor.ID, gameActor.UniqueID, ri.UniqueID, ri.Amount, InventoryItemLoss, p.Header().ID)
 
+			if ignore == true {
+				continue
+			}
+
+			d.sink <- removeItemResult
 		default:
 			d.sink <- p
 		}

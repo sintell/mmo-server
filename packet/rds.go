@@ -57,15 +57,17 @@ func (iq *InventoryQueryPacket) setHeader(h *HeaderPacket) {
 
 type RemoveItemQueryPacket struct {
 	HeaderPacket
-	ActorID uint32
-	ItemID  uint32
+	ActorID  uint32
+	UniqueID uint32
+	Amount   int32
 }
 
 func (ri *RemoveItemQueryPacket) MarshalBinary() []byte {
 	buf := make([]byte, ri.HeaderPacket.Length)
 	copy(buf[0:6], ri.HeaderPacket.MarshalBinary())
 	putUint32AsBytes(buf[6:10], ri.ActorID)
-	putUint32AsBytes(buf[10:14], ri.ItemID)
+	putUint32AsBytes(buf[10:14], ri.UniqueID)
+	putInt32AsBytes(buf[14:18], ri.Amount)
 	return buf
 }
 
@@ -82,4 +84,38 @@ func (ri *RemoveItemQueryPacket) Header() *HeaderPacket {
 // UnmarshalBinary TODO: write doc
 func (ri *RemoveItemQueryPacket) setHeader(h *HeaderPacket) {
 	ri.HeaderPacket = *h
+}
+
+type RemoveResultPacket struct {
+	HeaderPacket
+	RowCount uint32
+	ErrorNum uint32
+	ItemData []byte
+}
+
+func (rr *RemoveResultPacket) MarshalBinary() []byte {
+	return nil
+}
+
+// UnmarshalBinary TODO: write doc
+func (rr *RemoveResultPacket) UnmarshalBinary(data []byte) error {
+	rr.RowCount = readBytesAsUint32(data[0:])
+	rr.ErrorNum = readBytesAsUint32(data[16:])
+
+	if rr.ErrorNum != 0 {
+		rr.ItemData = nil
+	} else {
+		rr.ItemData = data[24:84]
+	}
+	return nil
+}
+
+// Header TODO: wrrte doc
+func (rr *RemoveResultPacket) Header() *HeaderPacket {
+	return &rr.HeaderPacket
+}
+
+// UnmarshalBinary TODO: wrrte doc
+func (rr *RemoveResultPacket) setHeader(h *HeaderPacket) {
+	rr.HeaderPacket = *h
 }

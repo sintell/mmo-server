@@ -47,6 +47,7 @@ func (ph *GamePacketHandler) NewPacketsList() *PacketsList {
 		5100: new(ClientLoginInfoPacket),
 		5116: new(ActorLoginPacket),
 		5188: new(ClientMovePacket),
+		5528: new(RemoveItemPacket),
 	}
 }
 
