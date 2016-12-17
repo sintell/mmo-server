@@ -76,7 +76,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 			}
 
 			if al, ok := ctx.Value("ActorsList").([3]*resource.ActorShort); ok {
-				glog.Infof("got actors list: %v", al)
+				glog.V(10).Infof("got actors list: %v", al)
 				m.awaitingActors.Lock()
 				m.awaitingActors.list[uid] = al
 				m.awaitingActors.Unlock()
