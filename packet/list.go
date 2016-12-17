@@ -465,7 +465,7 @@ func (cm *ClientMovePacket) UnmarshalBinary(data []byte) error {
 	cm.Position.Z = readBytesAsFloat32(data[8:12])
 	cm.Position.Rotate = readBytesAsFloat32(data[12:16])
 	cm.Animation = readBytesAsUint32(data[16:20])
-	cm.Kakaska = readBytesAsInt8(data[21:22])
+	cm.Kakaska = readBytesAsInt8(data[20:21])
 	return nil
 }
 
