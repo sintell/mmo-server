@@ -105,7 +105,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 		case 5100:
 			clientData := p.(*packet.ClientLoginInfoPacket)
 			u, err := m.getUser(clientData.AccountID)
-			glog.V(10).Infof("login from user: %s", u)
+			glog.Infof("login from user: %s", u)
 			err = u.checkCredentials(clientData.AccountID, clientData.Password)
 			if err != nil {
 				glog.Warningf("can't authenticate client: %s", err.Error())

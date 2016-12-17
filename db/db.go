@@ -112,3 +112,16 @@ func (p *Provider) GetActorsList(uid uint32) (*packet.ActorListPacket, error) {
 
 	return cl, nil
 }
+
+func (p *Provider) GetInventory(actorId uint32) ([]byte, error) {
+	_, inventoryBuf, err := p.query((&packet.InventoryQueryPacket{
+		HeaderPacket: packet.HeaderPacket{Length: 10, IsCrypt: false, Number: 0, ID: 11001},
+		ActorID:      actorId,
+	}).MarshalBinary())
+	if err != nil {
+		glog.Warningf("inventory query failed: %s", err.Error())
+		return nil, err
+	}
+
+	return inventoryBuf, nil
+}

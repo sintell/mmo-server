@@ -65,7 +65,7 @@ func main() {
 			},
 			Connections: make(map[server.TCPConnection]bool),
 		},
-		GameManager: game.NewManager(),
+		GameManager: game.NewManager(db),
 		AuthManager: auth.NewManager(db),
 		DB:          *db,
 	}

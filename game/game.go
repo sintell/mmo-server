@@ -6,19 +6,19 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/sintell/mmo-server/packet"
-	"github.com/sintell/mmo-server/resourse"
+	"github.com/sintell/mmo-server/resource"
 )
 
 // PacketsList holds all awailable packets
 type PacketsList map[uint]packet.Packet
 
 type actorList struct {
-	list map[uint32][3]*resourse.ActorShort
+	list map[uint32][3]*resource.ActorShort
 	*sync.Mutex
 }
 
 type ingameActorList struct {
-	actor map[uint32]*resourse.Actor
+	actor map[uint32]*resource.Actor
 	*sync.Mutex
 }
 
@@ -28,6 +28,11 @@ type Manager struct {
 	count          uint
 	awaitingActors *actorList
 	ingameActors   *ingameActorList
+	rds            inventoryDataSource
+}
+
+type inventoryDataSource interface {
+	GetInventory(uint32) ([]byte, error)
 }
 
 type data struct {
@@ -36,12 +41,13 @@ type data struct {
 }
 
 // NewManager initialized new game manager
-func NewManager() *Manager {
+func NewManager(remoteSource inventoryDataSource) *Manager {
 	return &Manager{
 		make(map[uint]data),
 		0,
-		&actorList{make(map[uint32][3]*resourse.ActorShort), new(sync.Mutex)},
-		&ingameActorList{make(map[uint32]*resourse.Actor), new(sync.Mutex)},
+		&actorList{make(map[uint32][3]*resource.ActorShort), new(sync.Mutex)},
+		&ingameActorList{make(map[uint32]*resource.Actor), new(sync.Mutex)},
+		remoteSource,
 	}
 }
 
@@ -69,7 +75,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 				uid = id
 			}
 
-			if al, ok := ctx.Value("ActorsList").([3]*resourse.ActorShort); ok {
+			if al, ok := ctx.Value("ActorsList").([3]*resource.ActorShort); ok {
 				glog.Infof("got actors list: %v", al)
 				m.awaitingActors.Lock()
 				m.awaitingActors.list[uid] = al
@@ -89,7 +95,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 			}
 
 			// Создать полного перса
-			gameActor := new(resourse.Actor)
+			gameActor := new(resource.Actor)
 
 			for slotID, ac := range list {
 				// Выбрать из списка перса с нужной айдишкой
@@ -103,6 +109,19 @@ func (m *Manager) handle(ctx context.Context, d data) {
 			m.ingameActors.Unlock()
 
 			glog.V(10).Infof("selected actor: %v", gameActor)
+
+			inventoryBuf, err := m.rds.GetInventory(gameActor.ID)
+
+			if err != nil {
+				glog.Warningf("no inventory list for: %d", gameActor.ID)
+				continue
+			}
+
+			d.sink <- &packet.LoginInWorldPacket{
+				HeaderPacket:  packet.HeaderPacket{Length: 9066, IsCrypt: false, Number: 0, ID: 5117},
+				ActorData:     gameActor,
+				InventoryData: inventoryBuf,
+			}
 
 		default:
 			d.sink <- p
