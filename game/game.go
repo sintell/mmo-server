@@ -61,6 +61,7 @@ func (m *Manager) RegisterDataSource(ctx context.Context, source <-chan packet.P
 
 func (m *Manager) handle(ctx context.Context, d data) {
 	var uid uint32
+	var gameActor *resource.Actor
 	for p := range d.source {
 		if p == nil || p.Header() == nil {
 			d.sink <- p
@@ -95,7 +96,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 			}
 
 			// Создать полного перса
-			gameActor := new(resource.Actor)
+			gameActor = new(resource.Actor)
 
 			for slotID, ac := range list {
 				// Выбрать из списка перса с нужной айдишкой
@@ -122,7 +123,18 @@ func (m *Manager) handle(ctx context.Context, d data) {
 				ActorData:     gameActor,
 				InventoryData: inventoryBuf,
 			}
-
+		case 5188:
+			cm := p.(*packet.ClientMovePacket)
+			if gameActor == nil {
+				glog.Warningf("no gameActor for %d", uid)
+				continue
+			}
+			d.sink <- &packet.ServerMovePacket{
+				HeaderPacket:     packet.HeaderPacket{Length: 33, IsCrypt: false, Number: 0, ID: 5189},
+				ClientMovePacket: *cm,
+				UniqueID:         gameActor.UniqueID,
+				SpeedMove:        350, //TODO SpeedMove (gameActor.Stats.SpeedMove)
+			}
 		default:
 			d.sink <- p
 		}
