@@ -326,10 +326,11 @@ func (cl *ActorListPacket) UnmarshalBinary(data []byte) error {
 		name = string(bytes.Runes(bytes.Split(data[bOffset+10:bOffset+22], []byte{0x00})[0]))
 
 		cl.List[cell] = &resource.ActorShort{
-			ID:    readBytesAsUint32(data[bOffset : bOffset+4]),
-			Name:  name,
-			Class: readBytesAsUint16(data[bOffset+22 : bOffset+24]),
-			Level: readBytesAsUint16(data[bOffset+24 : bOffset+26]),
+			ID:       readBytesAsUint32(data[bOffset : bOffset+4]),
+			UniqueID: 1, //TODO from C++
+			Name:     name,
+			Class:    readBytesAsUint16(data[bOffset+22 : bOffset+24]),
+			Level:    readBytesAsUint16(data[bOffset+24 : bOffset+26]),
 			Appearance: resource.Appearance{
 				Sex:  readBytesAsUint8(data[bOffset+40 : bOffset+41]),
 				Hair: readBytesAsUint8(data[bOffset+41 : bOffset+42]),
@@ -406,7 +407,8 @@ func (lw *LoginInWorldPacket) MarshalBinary() []byte {
 	putUint16AsBytes(buf[44:], 800) //TODO speed_attack
 	putUint16AsBytes(buf[46:], 350) //TODO speed_move
 	putInt32AsBytes(buf[66:], lw.ActorData.Stats.Reputation)
-	//TODO User HASH
+	putUint32AsBytes(buf[6:], lw.ActorData.UniqueID)
+
 	putFloat32AsBytes(buf[14:], lw.ActorData.Position.X)
 	putFloat32AsBytes(buf[18:], lw.ActorData.Position.Y)
 	putFloat32AsBytes(buf[22:], lw.ActorData.Position.Z)
@@ -444,4 +446,72 @@ func (lw *LoginInWorldPacket) Header() *HeaderPacket {
 // UnmarshalBinary TODO: write doc
 func (lw *LoginInWorldPacket) setHeader(h *HeaderPacket) {
 	lw.HeaderPacket = *h
+}
+
+type ClientMovePacket struct {
+	HeaderPacket
+	resource.Position
+	Animation uint32
+	Kakaska   int8
+}
+
+func (cm *ClientMovePacket) MarshalBinary() []byte {
+	return nil
+}
+
+// UnmarshalBinary TODO: write doc
+func (cm *ClientMovePacket) UnmarshalBinary(data []byte) error {
+	cm.Position.X = readBytesAsFloat32(data[0:4])
+	cm.Position.Y = readBytesAsFloat32(data[4:8])
+	cm.Position.Z = readBytesAsFloat32(data[8:12])
+	cm.Position.Rotate = readBytesAsFloat32(data[12:16])
+	cm.Animation = readBytesAsUint32(data[16:20])
+	cm.Kakaska = readBytesAsInt8(data[20:21])
+	return nil
+}
+
+// Header TODO: write doc
+func (cm *ClientMovePacket) Header() *HeaderPacket {
+	return &cm.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (cm *ClientMovePacket) setHeader(h *HeaderPacket) {
+	cm.HeaderPacket = *h
+}
+
+type ServerMovePacket struct {
+	HeaderPacket
+	ClientMovePacket
+	UniqueID  uint32
+	SpeedMove uint16
+}
+
+func (sm *ServerMovePacket) MarshalBinary() []byte {
+	buf := make([]byte, 33)
+	copy(buf[0:6], sm.HeaderPacket.MarshalBinary())
+	putUint32AsBytes(buf[6:], sm.UniqueID)
+	putFloat32AsBytes(buf[10:], sm.Position.X)
+	putFloat32AsBytes(buf[14:], sm.Position.Y)
+	putFloat32AsBytes(buf[18:], sm.Position.Z)
+	putUint16AsBytes(buf[22:], sm.SpeedMove)
+	putFloat32AsBytes(buf[25:], sm.Position.X)
+	putUint32AsBytes(buf[29:], sm.Animation)
+	putInt8AsBytes(buf[24:], sm.Kakaska)
+	return buf
+}
+
+// UnmarshalBinary TODO: write doc
+func (sm *ServerMovePacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+// Header TODO: write doc
+func (sm *ServerMovePacket) Header() *HeaderPacket {
+	return &sm.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (sm *ServerMovePacket) setHeader(h *HeaderPacket) {
+	sm.HeaderPacket = *h
 }

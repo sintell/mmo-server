@@ -48,9 +48,10 @@ type Stats struct {
 }
 
 type Position struct {
-	X float32
-	Y float32
-	Z float32
+	X      float32
+	Y      float32
+	Z      float32
+	Rotate float32
 }
 
 type Equipment struct {
@@ -58,10 +59,11 @@ type Equipment struct {
 }
 
 type ActorShort struct {
-	ID    uint32
-	Class uint16
-	Level uint16
-	Name  string
+	ID       uint32
+	UniqueID uint32
+	Class    uint16
+	Level    uint16
+	Name     string
 
 	Appearance
 	Stats

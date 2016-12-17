@@ -46,6 +46,7 @@ func (ph *GamePacketHandler) NewPacketsList() *PacketsList {
 		1111: new(ClientLoginRequestPacket),
 		5100: new(ClientLoginInfoPacket),
 		5116: new(ActorLoginPacket),
+		5188: new(ClientMovePacket),
 	}
 }
 
