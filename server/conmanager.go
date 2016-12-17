@@ -74,8 +74,8 @@ func (cm *ConnectionManager) ReadFrom(c TCPConnection) <-chan packet.Packet {
 					}
 					data, err := cm.PacketHandler.ReadBody(header, c, cm.PacketHandler.NewPacketsList())
 					if handleConnectionError(err) {
-						glog.Errorf("error reading packet body: %s\n", err.Error())
-						return
+						glog.Warningf("error reading packet body: %s\n", err.Error())
+						continue
 					}
 					glog.V(10).Infof("packet read complete in %s\n", time.Since(t).String())
 					sink <- data

@@ -399,7 +399,7 @@ type LoginInWorldPacket struct {
 }
 
 func (lw *LoginInWorldPacket) MarshalBinary() []byte {
-	buf := make([]byte, 9066)
+	buf := make([]byte, lw.HeaderPacket.Length)
 	copy(buf[0:6], lw.HeaderPacket.MarshalBinary())
 	copy(buf[10:], []byte{0x31, 0x00, 0x00, 0x00, 0x40, 0x57, 0xb6, 0x48, 0x2d, 0x6e, 0x88, 0x46, 0x20, 0x73, 0x93, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4c, 0x04})
 
@@ -411,11 +411,13 @@ func (lw *LoginInWorldPacket) MarshalBinary() []byte {
 	putFloat32AsBytes(buf[18:], lw.ActorData.Position.Y)
 	putFloat32AsBytes(buf[22:], lw.ActorData.Position.Z)
 
-	rowCount := readBytesAsUint64(lw.InventoryData[0:8])
+	itemsCount := uint16(readBytesAsUint64(lw.InventoryData[0:8]))
+
+	putUint16AsBytes(buf[98:], itemsCount)
 
 	var setOffset, getOffset int
 	//var itemID uint32
-	for i := 0; i < int(rowCount); i++ {
+	for i := 0; i < int(itemsCount); i++ {
 		setOffset = i * 56
 		getOffset = i*60 + 24
 		//itemID = readBytesAsUint32(lw.InventoryData[getOffset+16 : getOffset+16+4])
@@ -425,6 +427,7 @@ func (lw *LoginInWorldPacket) MarshalBinary() []byte {
 		copy(buf[106+setOffset:], lw.InventoryData[getOffset:getOffset+56])
 		//TODO weight
 	}
+
 	return buf
 }
 
