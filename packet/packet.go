@@ -1,66 +1,26 @@
 package packet
 
 import (
-	"encoding/binary"
 	"fmt"
 	"io"
 	"math"
-	"os"
 
 	"github.com/golang/glog"
 )
 
 // AfterLoginPackets TODO
-var AfterLoginPackets []byte
+var AfterLoginPackets Packet
 
 // CharListPacket TODO
-var CharListPacket []byte
+var CharListPacket Packet
 
 // StrangePacket TODO
-var StrangePacket []byte
+var StrangePacket Packet
 
 func init() {
-	f, err := os.OpenFile("./packets/login.pac", os.O_RDONLY, 0555)
-	if err != nil {
-		return
-	}
-	fInfo, err := f.Stat()
-	if err != nil {
-		return
-	}
-	AfterLoginPackets = make([]byte, fInfo.Size())
-	err = binary.Read(f, binary.LittleEndian, AfterLoginPackets)
-	if err != nil {
-		return
-	}
-
-	f, err = os.OpenFile("./packets/char.pac", os.O_RDONLY, 0555)
-	if err != nil {
-		return
-	}
-	fInfo, err = f.Stat()
-	if err != nil {
-		return
-	}
-	CharListPacket = make([]byte, fInfo.Size())
-	err = binary.Read(f, binary.LittleEndian, CharListPacket)
-	if err != nil {
-		return
-	}
-
-	f, err = os.OpenFile("./packets/idk.pac", os.O_RDONLY, 0555)
-	if err != nil {
-		return
-	}
-	fInfo, err = f.Stat()
-	if err != nil {
-		return
-	}
-	StrangePacket = make([]byte, fInfo.Size())
-	err = binary.Read(f, binary.LittleEndian, StrangePacket)
-	if err != nil {
-		return
-	}
+	AfterLoginPackets = ReadMockPacket("./packets/login.pac")
+	CharListPacket = ReadMockPacket("./packets/char.pac")
+	StrangePacket = ReadMockPacket("./packets/idk.pac")
 }
 
 // Packet represent datagramms and provides a convinient set of operations
@@ -85,6 +45,7 @@ func (ph *GamePacketHandler) NewPacketsList() *PacketsList {
 	return &PacketsList{
 		1111: new(ClientLoginRequestPacket),
 		5100: new(ClientLoginInfoPacket),
+		5116: new(ActorLoginPacket),
 	}
 }
 
@@ -128,7 +89,7 @@ func (ph GamePacketHandler) ReadBody(header *HeaderPacket, c io.Reader, p *Packe
 
 	if packetItem, exists := (*p)[header.ID]; exists {
 		if header.IsCrypt {
-			decryptBody(buf)
+			DecryptBody(buf)
 		}
 		err := packetItem.UnmarshalBinary(buf)
 		if err != nil {

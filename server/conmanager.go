@@ -105,16 +105,25 @@ func (cm *ConnectionManager) Write(c TCPConnection, source <-chan packet.Packet)
 			default:
 			}
 
-			if p == nil {
-				return
+			if p == nil || (p.Header() != nil && p.Header().Internal) {
+				glog.Warningf("atempting to write nil or internal package: %v", p)
+				continue
 			}
+
 			t := time.Now()
-			_, err := c.Write(p.MarshalBinary())
+			buf := p.MarshalBinary()
+			glog.V(10).Infof("packets: %x\n%+v\n%v", p.Header(), p.Header(), p.Header() != nil)
+
+			if p.Header() != nil && p.Header().IsCrypt {
+				buf = packet.Encrypt(buf)
+			}
+
+			glog.V(11).Infof("sending:\n%+ X", buf)
+			_, err := c.Write(buf)
 			if handleConnectionError(err) {
 				glog.Errorf("error writing data: %s", err.Error())
 			}
 			glog.V(10).Infof("packet write complete in %s\n", time.Since(t).String())
-
 		}
 	}()
 }

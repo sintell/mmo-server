@@ -12,6 +12,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
 	"github.com/sintell/mmo-server/auth"
+	"github.com/sintell/mmo-server/db"
 	"github.com/sintell/mmo-server/game"
 	"github.com/sintell/mmo-server/packet"
 	"github.com/sintell/mmo-server/server"
@@ -47,6 +48,13 @@ func main() {
 
 	ip := flag.String("ip", "0.0.0.0", "server ip adress")
 	port := flag.Int("port", 3034, "server port")
+	dbIP := flag.String("dbip", "138.201.123.151", "db ip adress")
+	dbPort := flag.Int("dbport", 14112, "db port")
+
+	db, err := db.NewProvider(&net.TCPAddr{IP: net.ParseIP(*dbIP), Port: *dbPort}, 1)
+	if err != nil {
+		glog.Fatal(err.Error())
+	}
 
 	server := server.TCPServer{
 		NetAddr: &net.TCPAddr{IP: net.ParseIP(*ip), Port: *port},
@@ -58,7 +66,8 @@ func main() {
 			Connections: make(map[server.TCPConnection]bool),
 		},
 		GameManager: game.NewManager(),
-		AuthManager: auth.NewManager(),
+		AuthManager: auth.NewManager(db),
+		DB:          *db,
 	}
 
 	c := make(chan os.Signal, 1)
@@ -67,6 +76,7 @@ func main() {
 		for sig := range c {
 			glog.Infof("got %s, finishing...\n", sig.String())
 			server.Stop()
+			db.Stop()
 			if *prof != "" {
 				profStop.Stop()
 			}
