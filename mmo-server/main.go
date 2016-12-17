@@ -21,6 +21,11 @@ import (
 var prof = flag.String("prof", "", "write cpu profile to file")
 var stopdelay = flag.Int("stopdelay", -1, "wait n secs before server stop")
 
+var ip = flag.String("ip", "0.0.0.0", "server ip adress")
+var port = flag.Int("port", 3034, "server port")
+var dbIP = flag.String("dbip", "138.201.123.151", "db ip adress")
+var dbPort = flag.Int("dbport", 14112, "db port")
+
 func init() {
 	flag.Parse()
 }
@@ -45,11 +50,6 @@ func profl(prof string) interface {
 
 func main() {
 	profStop := profl(*prof)
-
-	ip := flag.String("ip", "0.0.0.0", "server ip adress")
-	port := flag.Int("port", 3034, "server port")
-	dbIP := flag.String("dbip", "138.201.123.151", "db ip adress")
-	dbPort := flag.Int("dbport", 14112, "db port")
 
 	db, err := db.NewProvider(&net.TCPAddr{IP: net.ParseIP(*dbIP), Port: *dbPort}, 1)
 	if err != nil {
