@@ -135,6 +135,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 				UniqueID:         gameActor.UniqueID,
 				SpeedMove:        350, //TODO SpeedMove (gameActor.Stats.SpeedMove)
 			}
+
 		default:
 			d.sink <- p
 		}

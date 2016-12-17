@@ -408,6 +408,7 @@ func (lw *LoginInWorldPacket) MarshalBinary() []byte {
 	putUint16AsBytes(buf[46:], 350) //TODO speed_move
 	putInt32AsBytes(buf[66:], lw.ActorData.Stats.Reputation)
 	putUint32AsBytes(buf[6:], lw.ActorData.UniqueID)
+
 	putFloat32AsBytes(buf[14:], lw.ActorData.Position.X)
 	putFloat32AsBytes(buf[18:], lw.ActorData.Position.Y)
 	putFloat32AsBytes(buf[22:], lw.ActorData.Position.Z)
