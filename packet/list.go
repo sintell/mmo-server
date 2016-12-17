@@ -1,8 +1,12 @@
 package packet
 
 import (
+	"bytes"
+	"context"
 	"encoding/binary"
 	"time"
+
+	"github.com/sintell/mmo-server/resourse"
 )
 
 // HeaderPacket represents header for packets
@@ -11,6 +15,8 @@ type HeaderPacket struct {
 	IsCrypt bool
 	Number  uint8
 	ID      uint16
+
+	Internal bool
 }
 
 // MarshalBinary TODO: write doc
@@ -20,9 +26,7 @@ func (hp *HeaderPacket) MarshalBinary() []byte {
 	putBoolAsBytes(buf[2:3], hp.IsCrypt)
 	putUint8AsBytes(buf[3:4], hp.Number)
 	putUint16AsBytes(buf[4:6], hp.ID)
-	if hp.IsCrypt {
-		return encryptHead(buf)
-	}
+
 	return buf
 }
 
@@ -31,12 +35,29 @@ func (hp *HeaderPacket) UnmarshalBinary(data []byte) error {
 	hp.Length = readBytesAsUint16(data[0:2])
 	hp.IsCrypt = readBytesAsBool(data[2:3])
 	if hp.IsCrypt {
-		decryptHead(data)
+		DecryptHead(data)
 	}
 	hp.Number = readBytesAsUint8(data[3:4])
 	hp.ID = readBytesAsUint16(data[4:6])
 
 	return nil
+}
+
+/////////////////////// INTERNAL PACKETS /////////////////////
+
+// ContextSwitch TODO
+type ContextSwitch struct {
+	HeaderPacket
+
+	Ctx context.Context
+}
+
+func (cs *ContextSwitch) MarshalBinary() []byte             { return nil }
+func (cs *ContextSwitch) UnmarshalBinary(data []byte) error { return nil }
+func (cs *ContextSwitch) Header() *HeaderPacket {
+	return &cs.HeaderPacket
+}
+func (cs *ContextSwitch) setHeader(h *HeaderPacket) {
 }
 
 /////////////////////// RECV PACKETS ////////////////////////
@@ -169,7 +190,7 @@ func (st *ServerTimePacket) MarshalBinary() []byte {
 	binary.LittleEndian.PutUint16(buf[22:24], uint16(s))
 	binary.LittleEndian.PutUint16(buf[24:26], uint16(ms))
 
-	return []byte{}
+	return buf
 }
 
 // UnmarshalBinary TODO: write doc
@@ -186,16 +207,42 @@ func (st *ServerTimePacket) setHeader(h *HeaderPacket) {
 	st.HeaderPacket = *h
 }
 
+// ActorLoginPacket
+type ActorLoginPacket struct {
+	HeaderPacket
+	ActorID uint32
+}
+
+// MarshalBinary TODO: write doc
+func (cl *ActorLoginPacket) MarshalBinary() []byte {
+	return nil
+}
+
+// UnmarshalBinary TODO: write doc
+func (cl *ActorLoginPacket) UnmarshalBinary(data []byte) error {
+	cl.ActorID = readBytesAsUint32(data[0:4])
+	return nil
+}
+
+// Header TODO: write doc
+func (cl *ActorLoginPacket) Header() *HeaderPacket {
+	return &cl.HeaderPacket
+}
+
+func (cl *ActorLoginPacket) setHeader(h *HeaderPacket) {
+	cl.HeaderPacket = *h
+}
+
 /////////////////////// RDS PACKETS ////////////////////////
 
-// CharacterListQueryPacket TODO
-type CharacterListQueryPacket struct {
+// ActorListQueryPacket TODO
+type ActorListQueryPacket struct {
 	HeaderPacket
 	UID uint32
 }
 
 // MarshalBinary TODO: write doc
-func (clq *CharacterListQueryPacket) MarshalBinary() []byte {
+func (clq *ActorListQueryPacket) MarshalBinary() []byte {
 	buf := make([]byte, clq.HeaderPacket.Length)
 	copy(buf[:6], clq.HeaderPacket.MarshalBinary())
 	putUint32AsBytes(buf[6:10], clq.UID)
@@ -203,15 +250,117 @@ func (clq *CharacterListQueryPacket) MarshalBinary() []byte {
 }
 
 // UnmarshalBinary TODO: write doc
-func (clq *CharacterListQueryPacket) UnmarshalBinary(data []byte) error {
+func (clq *ActorListQueryPacket) UnmarshalBinary(data []byte) error {
 	return nil
 }
 
 // Header TODO: write doc
-func (clq *CharacterListQueryPacket) Header() *HeaderPacket {
+func (clq *ActorListQueryPacket) Header() *HeaderPacket {
 	return nil
 }
 
 // UnmarshalBinary TODO: write doc
-func (clq *CharacterListQueryPacket) setHeader(h *HeaderPacket) {
+func (clq *ActorListQueryPacket) setHeader(h *HeaderPacket) {
+}
+
+// ActorListPacket TODO
+type ActorListPacket struct {
+	HeaderPacket
+	SlotsTaken uint64
+	List       [3]*resourse.ActorShort
+}
+
+// MarshalBinary TODO: write doc
+func (cl *ActorListPacket) MarshalBinary() []byte {
+	// 1528 is character list packet length
+	buf := make([]byte, 1528)
+	copy(buf[0:6], cl.HeaderPacket.MarshalBinary())
+	offset := 0
+	for cell, character := range cl.List {
+		if character == nil {
+			continue
+		}
+
+		offset = cell * 144
+		putUint32AsBytes(buf[11+offset:11+offset+4], character.ID)
+		putUint16AsBytes(buf[15+offset:15+offset+2], character.Class)
+		putUint8AsBytes(buf[19+offset:19+offset+1], character.Sex)
+		putUint8AsBytes(buf[20+offset:20+offset+1], character.Hair)
+		putUint8AsBytes(buf[21+offset:21+offset+1], character.Face)
+		putUint16AsBytes(buf[87+offset:87+offset+2], character.Level)
+		copy(buf[89+offset:], []byte(character.Name))
+		putUint32AsBytes(buf[115+offset:115+offset+4], character.ID)
+		putUint16AsBytes(buf[123+offset:123+offset+2], character.Level)
+
+		copy(buf[cell*320+439:], character.Equipment.Data)
+
+		putUint16AsBytes(buf[1435+cell*4:1435+cell*4+2], character.Str)
+		putUint16AsBytes(buf[1447+cell*4:1447+cell*4+2], character.Int)
+		putUint16AsBytes(buf[1459+cell*4:1459+cell*4+2], character.Dex)
+		putInt32AsBytes(buf[1471+cell*4:1471+cell*4+4], character.Rating)
+
+		putFloat32AsBytes(buf[1483+cell*12:1483+cell*12+4], character.X)
+		putFloat32AsBytes(buf[1487+cell*12:1487+cell*12+4], character.Y)
+		putFloat32AsBytes(buf[1491+cell*12:1491+cell*12+4], character.Z)
+	}
+	return buf
+}
+
+// UnmarshalBinary TODO: write doc
+func (cl *ActorListPacket) UnmarshalBinary(data []byte) error {
+	var bOffset int
+	var equipOffset int
+	var cell int
+	var name string
+
+	cl.SlotsTaken = readBytesAsUint64(data[8 : 8+8])
+	for slot := 0; slot < int(cl.SlotsTaken); slot++ {
+		name = ""
+		bOffset = 24 + (slot * 112)
+		cell = int(readBytesAsUint8(data[8+bOffset : 8+bOffset+2]))
+		equipOffset = 24 + int(cl.SlotsTaken)*112
+
+		// This is beacause name can contain some trash
+		// We should split them till first \x00 symbol
+		// And took the first part
+		name = string(bytes.Runes(bytes.Split(data[bOffset+10:bOffset+22], []byte{0x00})[0]))
+
+		cl.List[cell] = &resourse.ActorShort{
+			ID:    readBytesAsUint32(data[bOffset : bOffset+4]),
+			Name:  name,
+			Class: readBytesAsUint16(data[bOffset+22 : bOffset+24]),
+			Level: readBytesAsUint16(data[bOffset+24 : bOffset+26]),
+			Appearance: resourse.Appearance{
+				Sex:  readBytesAsUint8(data[bOffset+40 : bOffset+41]),
+				Hair: readBytesAsUint8(data[bOffset+41 : bOffset+42]),
+				Face: readBytesAsUint8(data[bOffset+42 : bOffset+43]),
+			},
+			Stats: resourse.Stats{
+				Str:    readBytesAsUint16(data[bOffset+44 : bOffset+46]),
+				Dex:    readBytesAsUint16(data[bOffset+46 : bOffset+48]),
+				Int:    readBytesAsUint16(data[bOffset+48 : bOffset+50]),
+				Rating: readBytesAsInt32(data[bOffset+60 : bOffset+64]),
+			},
+			Position: resourse.Position{
+				X: readBytesAsFloat32(data[bOffset+64 : bOffset+68]),
+				Y: readBytesAsFloat32(data[bOffset+68 : bOffset+72]),
+				Z: readBytesAsFloat32(data[bOffset+72 : bOffset+76]),
+			},
+			Equipment: resourse.Equipment{
+				Data: data[(slot+1)*equipOffset : (slot+1)*equipOffset+(16*20)],
+			},
+		}
+	}
+
+	return nil
+}
+
+// Header TODO: write doc
+func (cl *ActorListPacket) Header() *HeaderPacket {
+	return &cl.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (cl *ActorListPacket) setHeader(h *HeaderPacket) {
+	cl.HeaderPacket = *h
 }

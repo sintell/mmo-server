@@ -49,14 +49,14 @@ func (p *Provider) getConn() *net.TCPConn {
 }
 
 // Query makes db requests
-func (p *Provider) Query(req []byte) ([]byte, error) {
+func (p *Provider) query(req []byte) (*packet.HeaderPacket, []byte, error) {
 	glog.V(10).Infof("making request to db: % x", req)
 	_, err := p.getConn().Write(req)
 	if err != nil {
 		if err == io.EOF {
 			p.connect()
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	buf := make([]byte, 6)
 	read, err := p.getConn().Read(buf)
@@ -64,11 +64,13 @@ func (p *Provider) Query(req []byte) ([]byte, error) {
 		if err == io.EOF {
 			p.connect()
 		}
-		return nil, err
+		return nil, nil, err
 	}
-	glog.V(10).Infof("read query head: read: %d\tresponce: % x", read, buf)
+	glog.V(10).Infof("read queryl head: read: %d\tresponce: % x", read, buf)
 	h := new(packet.HeaderPacket)
 	h.UnmarshalBinary(buf)
+
+	glog.V(10).Infof("header: %x", h)
 
 	size := uint(h.Length - 6)
 	buf = make([]byte, 0, size)
@@ -80,7 +82,7 @@ func (p *Provider) Query(req []byte) ([]byte, error) {
 			if err == io.EOF {
 				p.connect()
 			}
-			return nil, err
+			return nil, nil, err
 		}
 
 		buf = append(buf, t[:read]...)
@@ -88,5 +90,25 @@ func (p *Provider) Query(req []byte) ([]byte, error) {
 		glog.V(10).Infof("db responce: %d\tread: %d\tleft: %d\n", h.ID, read, bytesLeft)
 	}
 
-	return buf, nil
+	return h, buf, nil
+}
+
+//GetActorsList TODO
+func (p *Provider) GetActorsList(uid uint32) (*packet.ActorListPacket, error) {
+	h, charListBuf, err := p.query((&packet.ActorListQueryPacket{
+		HeaderPacket: packet.HeaderPacket{Length: 10, IsCrypt: false, Number: 0, ID: 11000},
+		UID:          uid,
+	}).MarshalBinary())
+	if err != nil {
+		glog.Warningf("character list query failed: %s", err.Error())
+		return nil, err
+	}
+
+	cl := &packet.ActorListPacket{HeaderPacket: *h}
+	err = cl.UnmarshalBinary(charListBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	return cl, nil
 }

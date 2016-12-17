@@ -24,41 +24,50 @@ func init() {
 	}
 }
 
-func decryptHead(data []byte) []byte {
-	Transform(data, -3)
+func DecryptHead(data []byte) []byte {
+	transform(data, -3)
 	return data
 }
 
-func encryptHead(data []byte) []byte {
-	Transform(data, -3)
+func EncryptHead(data []byte) []byte {
+	transform(data, -3)
 	return data
 }
 
-func decryptBody(data []byte) []byte {
-	Transform(data, 3)
+func DecryptBody(data []byte) []byte {
+	transform(data, 3)
 	return data
 }
 
-// Transform converts byte array to a crypted one
-func Transform(data []byte, offset int) {
+func EncryptBody(data []byte) []byte {
+	transform(data, 3)
+	return data
+}
+
+func Encrypt(data []byte) []byte {
+	transform(data, -3)
+	return data
+}
+
+// transform converts byte array to a crypted one
+func transform(data []byte, offset int) {
 	size := len(data)
-	buf := make([]byte, len(xorKey))
-	copy(buf, xorKey)
-	c1 := uint8(0)
+	keyBuf := make([]byte, len(xorKey))
+	copy(keyBuf, xorKey)
+	c1 := uint16(0)
 	c2 := uint16(0)
-	kc := uint8(0)
-	key := uint8(0)
+	kc := uint16(0)
+	key := uint16(0)
 	for i := 0 - offset; i < size; i++ {
-		c1++
-		key = buf[4*c1+8]
-		c2 = (uint16(key) + c2) & 255
-		kc = buf[4*c2+8]
-		buf[4*c1+8] = kc
-		buf[4*c2+8] = key
+		c1 = (c1 + 1) & 255
+		key = uint16(keyBuf[4*c1+8])
+		c2 = (key + c2) & 255
+		kc = uint16(keyBuf[4*c2+8])
+		keyBuf[4*c1+8] = uint8(kc)
+		keyBuf[4*c2+8] = uint8(key)
 		if i < 0 {
 			continue
 		}
-		data[i] = data[i] ^ buf[4*uint16(uint8(key+kc))+8]
+		data[i] = data[i] ^ keyBuf[4*((key+kc)&255)+8]
 	}
-
 }

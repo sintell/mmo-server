@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -18,13 +19,13 @@ type usersList struct {
 type Manager struct {
 	binds map[uint]data
 	count uint
-	rds   remoteDataSource
+	rds   charactersDataSource
 
 	users usersList
 }
 
-type remoteDataSource interface {
-	Query([]byte) ([]byte, error)
+type charactersDataSource interface {
+	GetActorsList(uint32) (*packet.ActorListPacket, error)
 }
 
 type data struct {
@@ -33,15 +34,15 @@ type data struct {
 }
 
 // NewManager creates new auth manager
-func NewManager(remoteSource remoteDataSource) *Manager {
+func NewManager(remoteSource charactersDataSource) *Manager {
 	return &Manager{make(map[uint]data), 0, remoteSource, usersList{make(map[uint32]*User), new(sync.Mutex)}}
 }
 
 // RegisterDataSource make 1-way channels to read from and to write to
-func (m *Manager) RegisterDataSource(source <-chan packet.Packet) <-chan packet.Packet {
+func (m *Manager) RegisterDataSource(ctx context.Context, source <-chan packet.Packet) <-chan packet.Packet {
 	sink := make(chan packet.Packet)
 	m.binds[m.count] = data{source, sink}
-	go m.handle(m.binds[m.count])
+	go m.handle(ctx, m.binds[m.count])
 	return sink
 }
 
@@ -65,6 +66,7 @@ func (m *Manager) registerUser(u *User) error {
 	defer m.users.Unlock()
 
 	if oldUser, exists := m.users.list[u.uid]; exists {
+		delete(m.users.list, u.uid)
 		return fmt.Errorf("user already logged in: %s", oldUser)
 	}
 
@@ -72,8 +74,12 @@ func (m *Manager) registerUser(u *User) error {
 	return nil
 }
 
-func (m *Manager) handle(d data) {
+func (m *Manager) handle(ctx context.Context, d data) {
 	for p := range d.source {
+		if p == nil || p.Header() == nil {
+			d.sink <- p
+			continue
+		}
 		glog.V(10).Infof("hadnling packet with ID: %d", p.Header().ID)
 		switch p.Header().ID {
 		case 1111:
@@ -91,7 +97,7 @@ func (m *Manager) handle(d data) {
 				loginTime: time.Now(),
 			})
 			if err != nil {
-				glog.Warningf("can't login user %d: %s", err.Error())
+				glog.Warningf("can't login user %d: %s", userData.AccountID, err.Error())
 				resp.Accepted = false
 			}
 
@@ -106,12 +112,23 @@ func (m *Manager) handle(d data) {
 				return
 			}
 
-			charListData, err := m.rds.Query((&packet.CharacterListQueryPacket{
-				HeaderPacket: packet.HeaderPacket{Length: 10, IsCrypt: false, Number: 0, ID: 11000},
-				UID:          u.uid,
-			}).MarshalBinary())
-			if err != nil {
-				glog.Warningf("character list query failed: %s", err.Error())
+			ctx = context.WithValue(ctx, "UserID", u.uid)
+			d.sink <- &packet.ContextSwitch{HeaderPacket: packet.HeaderPacket{ID: 1, Internal: true}, Ctx: ctx}
+
+			cl, err := m.rds.GetActorsList(u.uid)
+
+			for i, ch := range cl.List {
+				glog.V(10).Infof("Got character %d: %+v", i, ch)
+			}
+
+			ctx = context.WithValue(ctx, "ActorsList", cl.List)
+			d.sink <- &packet.ContextSwitch{HeaderPacket: packet.HeaderPacket{ID: 1, Internal: true}, Ctx: ctx}
+
+			cl.HeaderPacket = packet.HeaderPacket{
+				Length:  1528,
+				IsCrypt: true,
+				Number:  0,
+				ID:      5101,
 			}
 
 			resp := &packet.ServerTimePacket{
@@ -119,7 +136,7 @@ func (m *Manager) handle(d data) {
 			}
 			d.sink <- resp
 			d.sink <- packet.AfterLoginPackets
-			d.sink <- &packet.MockPacket{Data: charListData}
+			d.sink <- cl
 		default:
 			d.sink <- p
 		}

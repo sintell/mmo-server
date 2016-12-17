@@ -33,6 +33,14 @@ func readBytesAsUint32(data []byte) uint32 {
 	return binary.LittleEndian.Uint32(data)
 }
 
+func readBytesAsInt64(data []byte) int64 {
+	return int64(binary.LittleEndian.Uint64(data))
+}
+
+func readBytesAsUint64(data []byte) uint64 {
+	return binary.LittleEndian.Uint64(data)
+}
+
 func readBytesAsFloat32(data []byte) float32 {
 	return math.Float32frombits(binary.LittleEndian.Uint32(data))
 }
@@ -73,6 +81,14 @@ func putInt32AsBytes(data []byte, v int32) {
 
 func putUint32AsBytes(data []byte, v uint32) {
 	binary.LittleEndian.PutUint32(data, v)
+}
+
+func putInt64AsBytes(data []byte, v int64) {
+	binary.LittleEndian.PutUint64(data, uint64(v))
+}
+
+func putUint64AsBytes(data []byte, v uint64) {
+	binary.LittleEndian.PutUint64(data, v)
 }
 
 func putFloat32AsBytes(data []byte, v float32) {

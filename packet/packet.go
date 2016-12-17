@@ -45,6 +45,7 @@ func (ph *GamePacketHandler) NewPacketsList() *PacketsList {
 	return &PacketsList{
 		1111: new(ClientLoginRequestPacket),
 		5100: new(ClientLoginInfoPacket),
+		5116: new(ActorLoginPacket),
 	}
 }
 
@@ -88,7 +89,7 @@ func (ph GamePacketHandler) ReadBody(header *HeaderPacket, c io.Reader, p *Packe
 
 	if packetItem, exists := (*p)[header.ID]; exists {
 		if header.IsCrypt {
-			decryptBody(buf)
+			DecryptBody(buf)
 		}
 		err := packetItem.UnmarshalBinary(buf)
 		if err != nil {

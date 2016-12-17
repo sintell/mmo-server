@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net"
 	"strings"
 	"time"
@@ -19,12 +20,12 @@ type Logger interface {
 
 // GameManager is game manager
 type GameManager interface {
-	RegisterDataSource(<-chan packet.Packet) <-chan packet.Packet
+	RegisterDataSource(context.Context, <-chan packet.Packet) <-chan packet.Packet
 }
 
 // AuthManager is auth manager
 type AuthManager interface {
-	RegisterDataSource(<-chan packet.Packet) <-chan packet.Packet
+	RegisterDataSource(context.Context, <-chan packet.Packet) <-chan packet.Packet
 }
 
 // TCPServer is wrap around for basic tcp server listener
@@ -41,6 +42,7 @@ func shouldReject(c TCPConnection) bool {
 	if strings.Contains(c.RemoteAddr().String(), "0.0.0.0") ||
 		strings.Contains(c.RemoteAddr().String(), "91.246.87.82") ||
 		strings.Contains(c.RemoteAddr().String(), "91.246.101.158") ||
+		strings.Contains(c.RemoteAddr().String(), "95.27.231.42") ||
 		strings.Contains(c.RemoteAddr().String(), "138.201.123.151") ||
 		strings.Contains(c.RemoteAddr().String(), "192.168.1.34") {
 
@@ -73,14 +75,17 @@ func (s *TCPServer) Listen() {
 			continue
 		}
 		conn.SetKeepAlive(true)
-		_, err = conn.Write(packet.StrangePacket)
+		_, err = conn.Write(packet.StrangePacket.MarshalBinary())
 		if err != nil {
 			glog.Errorf("error writing SP: %s", err.Error())
 			return
 		}
+
+		ctx := context.WithValue(context.Background(), "UserConn", conn)
+
 		source := s.ConnectionManager.ReadFrom(conn)
-		source = s.AuthManager.RegisterDataSource(source)
-		source = s.GameManager.RegisterDataSource(source)
+		source = s.AuthManager.RegisterDataSource(ctx, source)
+		source = s.GameManager.RegisterDataSource(ctx, source)
 		s.ConnectionManager.Write(conn, source)
 	}
 }
