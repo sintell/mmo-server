@@ -14,24 +14,22 @@ func RemoveItem(rds dataSource, actorID uint32, actorUniqueID uint32, uniqueID u
 		return nil, true
 	}
 	if removeResult.ErrorNum != 0 {
-		resultItem := &packet.ErrorPacket{
+		return &packet.ErrorPacket{
 			HeaderPacket: packet.HeaderPacket{Length: 21, IsCrypt: false, Number: 0, ID: 1102},
 			FromPacket:   fromPacket,
 			ErrorNum:     removeResult.ErrorNum,
-		}
-	} else {
-		if removeResult.RowCount == 0 {
-			return nil, true
-		} else {
-			resultItem := &packet.ServerRemoveItemPacket{
-				HeaderPacket:   packet.HeaderPacket{Length: 24, IsCrypt: false, Number: 0, ID: 5233},
-				UniqueID:       uniqueID,
-				Amount:         amount,
-				ActorUniqueID:  actorUniqueID,
-				RemoveItemType: removeType,
-				TraderID:       actorUniqueID,
-			}
-		}
+		}, false
 	}
-	return resultItem, false
+
+	if removeResult.RowCount == 0 {
+		return nil, true
+	}
+	return &packet.ServerRemoveItemPacket{
+		HeaderPacket:   packet.HeaderPacket{Length: 24, IsCrypt: false, Number: 0, ID: 5233},
+		UniqueID:       uniqueID,
+		Amount:         amount,
+		ActorUniqueID:  actorUniqueID,
+		RemoveItemType: removeType,
+		TraderID:       actorUniqueID,
+	}, false
 }
