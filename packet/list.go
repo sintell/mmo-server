@@ -347,8 +347,8 @@ func (lw *LoginInWorldPacket) MarshalBinary() []byte {
 	copy(buf[0:6], lw.HeaderPacket.MarshalBinary())
 	copy(buf[10:], []byte{0x31, 0x00, 0x00, 0x00, 0x40, 0x57, 0xb6, 0x48, 0x2d, 0x6e, 0x88, 0x46, 0x20, 0x73, 0x93, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4c, 0x04})
 
-	putUint16AsBytes(buf[44:], 800) //TODO speed_attack
-	putUint16AsBytes(buf[46:], 350) //TODO speed_move
+	putUint16AsBytes(buf[44:], 800)   //TODO speed_attack
+	putUint16AsBytes(buf[46:], 30000) //TODO speed_move
 	putInt32AsBytes(buf[66:], lw.ActorData.Stats.Reputation)
 	putUint32AsBytes(buf[6:], lw.ActorData.UniqueID)
 
@@ -472,7 +472,7 @@ func (ri *RemoveItemPacket) MarshalBinary() []byte {
 // UnmarshalBinary TODO: write doc
 func (ri *RemoveItemPacket) UnmarshalBinary(data []byte) error {
 	ri.UniqueID = readBytesAsUint32(data[0:4])
-	ri.Amount = readBytesAsInt32(data[4:8])
+	ri.Amount = readBytesAsInt32(data[8:12])
 	return nil
 }
 
@@ -531,7 +531,7 @@ func (sri *ServerRemoveItemPacket) MarshalBinary() []byte {
 	putInt32AsBytes(buf[14:], sri.Amount)
 	switch sri.RemoveItemType {
 	case 0:
-		buf[22] = 0x00
+		buf[22] = 0x01
 		putUint32AsBytes(buf[18:], sri.ActorUniqueID)
 	case 1:
 		buf[22] = 0x6c
