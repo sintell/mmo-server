@@ -143,7 +143,7 @@ func (m *Manager) handle(ctx context.Context, d data) {
 				continue
 			}
 			glog.V(10).Infof("Remove item ID: %d. Amount: %d", ri.ID, ri.Amount)
-			removeItemResult, err := RemoveItem(m.rds, gameActor.ID, gameActor.UniqueID, ri.UniqueID, ri.Amount, InventoryItemLoss, p.Header().ID)
+			removeItemResult, err := RemoveItem(m.rds, gameActor.ID, gameActor.UniqueID, ri.UniqueID, ri.Amount, resource.InventoryItemLoss, p.Header().ID)
 
 			if err != nil {
 				glog.Warningf("can't remove item %d, from gameActor %d", ri.UniqueID, gameActor.ID)
