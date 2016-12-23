@@ -2,28 +2,31 @@ package resource
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/sintell/mmo-server/config"
 )
 
 const (
 	InventoryItemLoss = 0
+
+	AddItemNormal = 0
+	AddItemNoText = 1
+	AddItemTrade  = 2
 )
 
 type ItemFields struct {
-	Identify    int `json:"identify"`
-	UniqueID    int `json:"unique_id"`
-	ItemID      int `json:"item_id"`
-	Amount      int `json:"amount"`
-	TimeOff     int `json:"time_off"`
-	ItemView    int `json:"item_view"`
-	UseAmount   int `json:"use_amount"`
-	AccountLock int `json:"account_lock"`
-	HourUse     int `json:"hour_use"`
-	Lock        int `json:"lock"`
-	Extension   int `json:"extension"`
-	RunesOpen   int `json:"runes_open"`
-	Owner       int `json:"owner"`
+	Identify    int32 `json:"identify"`
+	UniqueID    int32 `json:"unique_id"`
+	ItemID      int32 `json:"item_id"`
+	Amount      int32 `json:"amount"`
+	TimeOff     int32 `json:"time_off"`
+	ItemView    int32 `json:"item_view"`
+	UseAmount   int32 `json:"use_amount"`
+	AccountLock int32 `json:"account_lock"`
+	HourUse     int32 `json:"hour_use"`
+	Lock        int32 `json:"lock"`
+	Extension   int32 `json:"extension"`
+	RunesOpen   int32 `json:"runes_open"`
+	Owner       int32 `json:"owner"`
 }
 
 type Item struct {
@@ -42,51 +45,51 @@ type Item struct {
 	EquipType  []int  `json:"equip_type"`
 	Classes    []int  `json:"classes"`
 	Stats      struct {
-		Distance         int `json:"distance"`
-		MeleeAccuracy    int `json:"melee_accuracy"`
-		Absorption       int `json:"absorption"`
-		AbsorptionMelee  int `json:"absorption_melee"`
-		AbsorptionRange  int `json:"absorption_range"`
-		AbsorptionSpell  int `json:"absorption_spell"`
-		Evasion          int `json:"evasion"`
-		EvasionMelee     int `json:"evasion_melee"`
-		EvasionRange     int `json:"evasion_range"`
-		EvasionSpell     int `json:"evasion_spell"`
-		Int              int `json:"int"`
-		AbsorptionPvp    int `json:"absorption_pvp"`
-		EvasionPvp       int `json:"evasion_pvp"`
-		CriticalAbs      int `json:"critical_abs"`
-		Str              int `json:"str"`
-		Critical         int `json:"critical"`
-		RangeAccuracy    int `json:"range_accuracy"`
-		SpellAccuracy    int `json:"spell_accuracy"`
-		MeleeAttack      int `json:"melee_attack"`
-		RangeAttack      int `json:"range_attack"`
-		SpellAttack      int `json:"spell_attack"`
-		SpeedAttack      int `json:"speed_attack"`
-		Dex              int `json:"dex"`
-		MaxHp            int `json:"max_hp"`
-		MaxMp            int `json:"max_mp"`
-		RegHp            int `json:"reg_hp"`
-		RegMp            int `json:"reg_mp"`
-		MonsterKiller    int `json:"monster_killer"`
-		HumanKiller      int `json:"human_killer"`
-		MaxWeight        int `json:"max_weight"`
-		SpeedMove        int `json:"speed_move"`
-		MonsterAbs       int `json:"monster_abs"`
-		MpCutPercent     int `json:"mp_cut_percent"`
-		HealthEffect     int `json:"health_effect"`
-		HumanAbs         int `json:"human_abs"`
-		CriticalStr      int `json:"critical_str"`
-		AcidEvasion      int `json:"acid_evasion"`
-		WebEvasion       int `json:"web_evasion"`
-		PalsyEvasion     int `json:"palsy_evasion"`
-		ExplosionEvasion int `json:"explosion_evasion"`
-		ElectricEvasion  int `json:"electric_evasion"`
+		Distance         int    `json:"distance"`
+		MeleeAccuracy    int    `json:"melee_accuracy"`
+		Absorption       int    `json:"absorption"`
+		AbsorptionMelee  int    `json:"absorption_melee"`
+		AbsorptionRange  int    `json:"absorption_range"`
+		AbsorptionSpell  int    `json:"absorption_spell"`
+		Evasion          int    `json:"evasion"`
+		EvasionMelee     int    `json:"evasion_melee"`
+		EvasionRange     int    `json:"evasion_range"`
+		EvasionSpell     int    `json:"evasion_spell"`
+		Int              int    `json:"int"`
+		AbsorptionPvp    int    `json:"absorption_pvp"`
+		EvasionPvp       int    `json:"evasion_pvp"`
+		CriticalAbs      int    `json:"critical_abs"`
+		Str              int    `json:"str"`
+		Critical         int    `json:"critical"`
+		RangeAccuracy    int    `json:"range_accuracy"`
+		SpellAccuracy    int    `json:"spell_accuracy"`
+		MeleeAttack      int    `json:"melee_attack"`
+		RangeAttack      int    `json:"range_attack"`
+		SpellAttack      int    `json:"spell_attack"`
+		SpeedAttack      int    `json:"speed_attack"`
+		Dex              int    `json:"dex"`
+		MaxHp            int    `json:"max_hp"`
+		MaxMp            int    `json:"max_mp"`
+		RegHp            int    `json:"reg_hp"`
+		RegMp            int    `json:"reg_mp"`
+		MonsterKiller    int    `json:"monster_killer"`
+		HumanKiller      int    `json:"human_killer"`
+		MaxWeight        uint32 `json:"max_weight"`
+		SpeedMove        int    `json:"speed_move"`
+		MonsterAbs       int    `json:"monster_abs"`
+		MpCutPercent     int    `json:"mp_cut_percent"`
+		HealthEffect     int    `json:"health_effect"`
+		HumanAbs         int    `json:"human_abs"`
+		CriticalStr      int    `json:"critical_str"`
+		AcidEvasion      int    `json:"acid_evasion"`
+		WebEvasion       int    `json:"web_evasion"`
+		PalsyEvasion     int    `json:"palsy_evasion"`
+		ExplosionEvasion int    `json:"explosion_evasion"`
+		ElectricEvasion  int    `json:"electric_evasion"`
 	} `json:"stats"`
 	Params struct {
 		Stack     bool   `json:"stack"`
-		Weight    int    `json:"weight"`
+		Weight    uint32 `json:"weight"`
 		Price     int    `json:"price"`
 		Buffs     []int  `json:"buffs"`
 		Enchanter string `json:"enchanter"`
@@ -146,25 +149,23 @@ type Item struct {
 
 type ItemsStruct []*Item
 
-var ItemsOffset map[string]int32
-var ItemsInfo map[int32]*Item
+var ItemsOffset ItemFields
+var ItemsInfo = make(map[int32]*Item)
 
 func GetItemById(id int32) *Item {
 	return ItemsInfo[id]
 }
 
 func LoadConfig() {
-	fmt.Println("Read itemOffsets.cfg")
 	str := config.ReadConfig("./config/itemOffsets.cfg")
 	res := ItemFields{}
 	json.Unmarshal([]byte(str), &res)
+	ItemsOffset = res
 
-	fmt.Println("Read items.cfg")
 	str = config.ReadConfig("./config/items.cfg")
 
 	items := ItemsStruct{}
 	json.Unmarshal([]byte(str), &items)
-	ItemsInfo := make(map[int32]*Item)
 	for _, value := range items {
 		ItemsInfo[value.ID] = value
 	}

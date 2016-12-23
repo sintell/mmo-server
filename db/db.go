@@ -146,3 +146,24 @@ func (p *Provider) RemoveItem(actorId uint32, uniqueID uint32, amount int32) (*p
 
 	return rr, nil
 }
+
+func (p *Provider) AddItem(actorId uint32, binaryItem []byte, ownerPos int32) (*packet.AddItemResultPacket, error) {
+	h, addBuf, err := p.query((&packet.AddItemQueryPacket{
+		HeaderPacket: packet.HeaderPacket{Length: 70, IsCrypt: false, Number: 0, ID: 11003},
+		ActorID:      actorId,
+		Item:         binaryItem,
+		OwnerPos:     ownerPos,
+	}).MarshalBinary())
+	if err != nil {
+		glog.Warningf("add item query failed: %s", err.Error())
+		return nil, err
+	}
+
+	ai := &packet.AddItemResultPacket{HeaderPacket: *h}
+	err = ai.UnmarshalBinary(addBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	return ai, nil
+}

@@ -34,6 +34,7 @@ type Manager struct {
 type dataSource interface {
 	GetInventory(uint32) ([]byte, error)
 	RemoveItem(uint32, uint32, int32) (*packet.RemoveResultPacket, error)
+	AddItem(uint32, []byte, int32) (*packet.AddItemResultPacket, error)
 }
 
 type data struct {
@@ -130,12 +131,18 @@ func (m *Manager) handle(ctx context.Context, d data) {
 				glog.Warningf("no gameActor for %d", uid)
 				continue
 			}
+			addItemResult, err := AddItem(m.rds, gameActor, 409, 1, []byte{0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x99, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}, resource.AddItemNormal, 5188)
+			if err != nil {
+				glog.Warningf("can't add item")
+				continue
+			}
 			d.sink <- &packet.ServerMovePacket{
 				HeaderPacket:     packet.HeaderPacket{Length: 33, IsCrypt: false, Number: 0, ID: 5189},
 				ClientMovePacket: *cm,
 				UniqueID:         gameActor.UniqueID,
 				SpeedMove:        350, //TODO SpeedMove (gameActor.Stats.SpeedMove)
 			}
+			d.sink <- addItemResult
 		case 5528:
 			ri := p.(*packet.RemoveItemPacket)
 			if gameActor == nil {
