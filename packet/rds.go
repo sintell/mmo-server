@@ -119,3 +119,68 @@ func (rr *RemoveResultPacket) Header() *HeaderPacket {
 func (rr *RemoveResultPacket) setHeader(h *HeaderPacket) {
 	rr.HeaderPacket = *h
 }
+
+type AddItemQueryPacket struct {
+	HeaderPacket
+	ActorID  uint32
+	Item     []byte
+	OwnerPos int32
+}
+
+func (ai *AddItemQueryPacket) MarshalBinary() []byte {
+	buf := make([]byte, ai.HeaderPacket.Length)
+	copy(buf[0:6], ai.HeaderPacket.MarshalBinary())
+	putUint32AsBytes(buf[6:10], ai.ActorID)
+	putUint32AsBytes(ai.Item[ai.OwnerPos:ai.OwnerPos+4], ai.ActorID)
+	copy(buf[10:70], ai.Item)
+	return buf
+}
+
+// UnmarshalBinary TODO: waite doc
+func (ai *AddItemQueryPacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+// Header TODO: waite doc
+func (ai *AddItemQueryPacket) Header() *HeaderPacket {
+	return &ai.HeaderPacket
+}
+
+// UnmarshalBinary TODO: waite doc
+func (ai *AddItemQueryPacket) setHeader(h *HeaderPacket) {
+	ai.HeaderPacket = *h
+}
+
+type AddItemResultPacket struct {
+	HeaderPacket
+	RowCount uint32
+	ErrorNum uint32
+	ItemData []byte
+}
+
+func (ai *AddItemResultPacket) MarshalBinary() []byte {
+	return nil
+}
+
+// UnmarshalBinary TODO: write doc
+func (ai *AddItemResultPacket) UnmarshalBinary(data []byte) error {
+	ai.RowCount = readBytesAsUint32(data[0:])
+	ai.ErrorNum = readBytesAsUint32(data[16:])
+
+	if ai.ErrorNum != 0 {
+		ai.ItemData = nil
+	} else {
+		ai.ItemData = data[24:84]
+	}
+	return nil
+}
+
+// Header TODO: waite doc
+func (ai *AddItemResultPacket) Header() *HeaderPacket {
+	return &ai.HeaderPacket
+}
+
+// UnmarshalBinary TODO: waite doc
+func (ai *AddItemResultPacket) setHeader(h *HeaderPacket) {
+	ai.HeaderPacket = *h
+}

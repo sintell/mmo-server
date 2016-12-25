@@ -347,8 +347,8 @@ func (lw *LoginInWorldPacket) MarshalBinary() []byte {
 	copy(buf[0:6], lw.HeaderPacket.MarshalBinary())
 	copy(buf[10:], []byte{0x31, 0x00, 0x00, 0x00, 0x40, 0x57, 0xb6, 0x48, 0x2d, 0x6e, 0x88, 0x46, 0x20, 0x73, 0x93, 0x48, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x4c, 0x04})
 
-	putUint16AsBytes(buf[44:], 800)   //TODO speed_attack
-	putUint16AsBytes(buf[46:], 30000) //TODO speed_move
+	putUint16AsBytes(buf[44:], 800)  //TODO speed_attack
+	putUint16AsBytes(buf[46:], 1000) //TODO speed_move
 	putInt32AsBytes(buf[66:], lw.ActorData.Stats.Reputation)
 	putUint32AsBytes(buf[6:], lw.ActorData.UniqueID)
 
@@ -560,4 +560,46 @@ func (sri *ServerRemoveItemPacket) Header() *HeaderPacket {
 // UnmarshalBinary TODO: write doc
 func (sri *ServerRemoveItemPacket) setHeader(h *HeaderPacket) {
 	sri.HeaderPacket = *h
+}
+
+type ServerAddItemPacket struct {
+	HeaderPacket
+	BinaryItem    []byte
+	ActorUniqueID uint32
+	AddItemType   int32
+	ItemIdPos     int32
+}
+
+func (sai *ServerAddItemPacket) MarshalBinary() []byte {
+	buf := make([]byte, 127)
+	copy(buf[0:6], sai.HeaderPacket.MarshalBinary())
+	if readBytesAsInt16(sai.BinaryItem[sai.ItemIdPos:]) == 0 { //TODO identify ID
+
+	}
+	copy(buf[6:6+56], sai.BinaryItem[0:56])
+	switch sai.AddItemType {
+	case 0:
+		putUint32AsBytes(buf[122:], sai.ActorUniqueID)
+	case 1:
+		buf[126] = 0x03
+	case 2:
+		buf[126] = 0x05
+		putUint32AsBytes(buf[122:], sai.ActorUniqueID)
+	}
+	return buf
+}
+
+// UnmarshalBinary TODO: write doc
+func (sai *ServerAddItemPacket) UnmarshalBinary(data []byte) error {
+	return nil
+}
+
+// Header TODO: write doc
+func (sai *ServerAddItemPacket) Header() *HeaderPacket {
+	return &sai.HeaderPacket
+}
+
+// UnmarshalBinary TODO: write doc
+func (sai *ServerAddItemPacket) setHeader(h *HeaderPacket) {
+	sai.HeaderPacket = *h
 }
