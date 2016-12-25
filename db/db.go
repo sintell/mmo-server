@@ -125,3 +125,24 @@ func (p *Provider) GetInventory(actorId uint32) ([]byte, error) {
 
 	return inventoryBuf, nil
 }
+
+func (p *Provider) RemoveItem(actorId uint32, uniqueID uint32, amount int32) (*packet.RemoveResultPacket, error) {
+	h, removeBuf, err := p.query((&packet.RemoveItemQueryPacket{
+		HeaderPacket: packet.HeaderPacket{Length: 18, IsCrypt: false, Number: 0, ID: 11002},
+		ActorID:      actorId,
+		UniqueID:     uniqueID,
+		Amount:       amount,
+	}).MarshalBinary())
+	if err != nil {
+		glog.Warningf("remove item query failed: %s", err.Error())
+		return nil, err
+	}
+
+	rr := &packet.RemoveResultPacket{HeaderPacket: *h}
+	err = rr.UnmarshalBinary(removeBuf)
+	if err != nil {
+		return nil, err
+	}
+
+	return rr, nil
+}

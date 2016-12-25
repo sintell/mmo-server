@@ -41,10 +41,12 @@ type TCPServer struct {
 func shouldReject(c TCPConnection) bool {
 	if strings.Contains(c.RemoteAddr().String(), "0.0.0.0") ||
 		strings.Contains(c.RemoteAddr().String(), "91.246.87.82") ||
-		strings.Contains(c.RemoteAddr().String(), "91.246.101.158") ||
+		strings.Contains(c.RemoteAddr().String(), "91.224.132.120") ||
 		strings.Contains(c.RemoteAddr().String(), "95.27.231.42") ||
 		strings.Contains(c.RemoteAddr().String(), "138.201.123.151") ||
-		strings.Contains(c.RemoteAddr().String(), "192.168.1.34") {
+		strings.Contains(c.RemoteAddr().String(), "192.168.1.34") ||
+		strings.Contains(c.RemoteAddr().String(), "172.111.123.1") ||
+		strings.Contains(c.RemoteAddr().String(), "172.27.232.1") {
 
 		return false
 	}

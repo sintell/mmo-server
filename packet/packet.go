@@ -47,6 +47,7 @@ func (ph *GamePacketHandler) NewPacketsList() *PacketsList {
 		5100: new(ClientLoginInfoPacket),
 		5116: new(ActorLoginPacket),
 		5188: new(ClientMovePacket),
+		5528: new(RemoveItemPacket),
 	}
 }
 
@@ -86,7 +87,7 @@ func (ph GamePacketHandler) ReadBody(header *HeaderPacket, c io.Reader, p *Packe
 		glog.V(10).Infof("pid: %d\tread: %d\tleft: %d\n", header.ID, read, bytesLeft)
 	}
 
-	glog.V(10).Infof("body bytes: %+v", buf)
+	glog.V(10).Infof("body bytes: %+ X", buf)
 
 	if packetItem, exists := (*p)[header.ID]; exists {
 		if header.IsCrypt {
